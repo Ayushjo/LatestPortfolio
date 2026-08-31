@@ -11,6 +11,9 @@ import {
   BookOpen,
   Globe,
   ChevronDown,
+  Clapperboard,
+  ExternalLink,
+  ArrowRight,
 } from "lucide-react";
 
 import { PORTFOLIO_CONTENT } from "@/constants/portfolio";
@@ -39,7 +42,7 @@ import GitHubCalendarComponent from "@/Components/GitHubCalendarComponent";
 import { MapPinIcon, type MapPinIconHandle } from "@/Components/ui/map-pin";
 
 // Lazy load heavy below-the-fold components
-const Oneko = lazy(() => import("@/Components/Oneko"));
+const CursorRabbit = lazy(() => import("@/Components/CursorRabbit"));
 
 type TechLogo = {
   src: string;
@@ -56,15 +59,27 @@ const TECH_STACK_LOGOS: Record<string, TechLogo> = {
   "Drizzle ORM": { src: "https://cdn.simpleicons.org/drizzle", alt: "Drizzle ORM logo" },
   "SQLAlchemy": { src: "https://cdn.simpleicons.org/sqlalchemy", alt: "SQLAlchemy logo" },
   Python: { src: "https://cdn.simpleicons.org/python", alt: "Python logo" },
+  Rust: { src: "https://cdn.simpleicons.org/rust", alt: "Rust logo" },
+  Go: { src: "https://cdn.simpleicons.org/go", alt: "Go logo" },
+  Java: { src: "https://cdn.simpleicons.org/openjdk", alt: "Java logo" },
+  "C++": { src: "https://cdn.simpleicons.org/cplusplus", alt: "C++ logo" },
+  SQL: { src: "https://cdn.simpleicons.org/postgresql", alt: "SQL logo" },
   FastAPI: { src: "https://cdn.simpleicons.org/fastapi", alt: "FastAPI logo" },
   langChain: { src: "https://cdn.simpleicons.org/langchain", alt: "LangChain logo" },
   langGraph: { src: "https://cdn.simpleicons.org/langgraph", alt: "LangGraph logo" },
+  RAG: { src: "https://cdn.simpleicons.org/claude", alt: "RAG logo" },
   Qdrant: { src: "https://cdn.simpleicons.org/qdrant", alt: "Qdrant logo" },
   Redis: { src: "https://cdn.simpleicons.org/redis", alt: "Redis logo" },
+  Neo4j: { src: "https://cdn.simpleicons.org/neo4j", alt: "Neo4j logo" },
+  BullMQ: { src: "https://cdn.simpleicons.org/redis", alt: "BullMQ logo" },
   Docker: { src: "https://cdn.simpleicons.org/docker", alt: "Docker logo" },
+  AWS: { src: "https://cdn.simpleicons.org/amazonwebservices", alt: "AWS logo" },
+  Nginx: { src: "https://cdn.simpleicons.org/nginx", alt: "Nginx logo" },
   GCP: { src: "https://cdn.simpleicons.org/googlecloud", alt: "Google Cloud logo" },
   PostgreSQL: { src: "https://cdn.simpleicons.org/postgresql", alt: "PostgreSQL logo" },
   MongoDB: { src: "https://cdn.simpleicons.org/mongodb", alt: "MongoDB logo" },
+  "Socket.IO": { src: "https://cdn.simpleicons.org/socketdotio", alt: "Socket.IO logo" },
+  "scikit-learn": { src: "https://cdn.simpleicons.org/scikitlearn", alt: "scikit-learn logo" },
   "Claude Code": { src: "https://cdn.simpleicons.org/claude", alt: "Anthropic logo" },
   Codex: { src: "https://cdn.simpleicons.org/openai", alt: "OpenAI logo" },
 };
@@ -262,7 +277,7 @@ export default function Home() {
               <div className="space-y-6 md:space-y-8">
                 {/* Avatar */}
                 <Image
-                  className="w-32 h-32 md:w-36 md:h-36 rounded-2xl object-cover shadow-sm bg-neutral-100 dark:bg-neutral-800 border border-transparent dark:border-white/5"
+                  className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover overflow-hidden shadow-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200/50 dark:border-white/10"
                   src={PORTFOLIO_CONTENT.personal.avatar}
                   alt="Avatar"
                   width={144}
@@ -276,7 +291,7 @@ export default function Home() {
                     About me.
                   </h2>
                  <div className="text-neutral-700 dark:text-neutral-300 text-[15px] md:text-[17px] leading-loose w-full max-w-none">
-                   {PORTFOLIO_CONTENT.personal.bio.split(/(TypeScript|React|Next\.js|Node\.js|PostgreSQL|LLM APIs|RAG|FastAPI|AI|web)/g).map((part, i) => {
+                   {PORTFOLIO_CONTENT.personal.bio.split(/(TypeScript|React|Next\.js|Node\.js|PostgreSQL|FastAPI|Rust|Python|AI|web)/g).map((part, i) => {
                     const pillClass = "inline-flex items-center text-sm font-semibold bg-neutral-100 dark:bg-white/10 border border-neutral-200 dark:border-white/20 py-1 px-2.5 rounded-lg text-black dark:text-white align-baseline shadow-xs mx-0.5";
                     
                     const inlineMap: Record<string, JSX.Element> = {
@@ -316,6 +331,18 @@ export default function Home() {
                           <span>FastAPI</span>
                         </span>
                       ),
+                      Rust: (
+                        <span key={`rust-${i}`} className={pillClass}>
+                          <img src="https://cdn.simpleicons.org/rust" alt="Rust" className="w-4 h-4 mr-1.5" />
+                          <span>Rust</span>
+                        </span>
+                      ),
+                      Python: (
+                        <span key={`python-${i}`} className={pillClass}>
+                          <img src="https://cdn.simpleicons.org/python" alt="Python" className="w-4 h-4 mr-1.5" />
+                          <span>Python</span>
+                        </span>
+                      ),
                       AI: (
                         <span key={`ai-${i}`} className="font-bold text-neutral-900 dark:text-neutral-100">AI</span>
                       ),
@@ -333,8 +360,7 @@ export default function Home() {
             {/* Actions */}
             <div className="flex flex-wrap gap-3 pt-4 md:pt-6 w-full mt-auto">
               <a
-                // href={`https://mail.google.com/mail/?view=cm&fs=1&to=${PORTFOLIO_CONTENT.personal.email}`}
-                href={`https://drive.google.com/file/d/1fh7zrKLt2Xk4G6jQx595zUj42e-epS14/view`}
+                href={PORTFOLIO_CONTENT.personal.resumeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-[15px] font-bold bg-neutral-900 dark:bg-white text-white dark:text-black py-2.5 px-5 rounded-xl hover:scale-105 hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all gap-2 shadow-sm group/send"
@@ -601,8 +627,85 @@ export default function Home() {
         {/* === OPEN SOURCE SECTION === */}
         <OpenSourceSection />
 
-        {/* === BLOG SECTION === */}
-        <div className="mt-20 w-full mb-20 cv-auto">
+        {/* === WRITING SECTION === */}
+        <div className="mt-20 w-full cv-auto">
+          {/* Entertainment Articles */}
+          <div className="mb-8 px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <Clapperboard className="text-amber-500" size={24} />
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Entertainment Writing</h2>
+            </div>
+            <p className="text-neutral-600 dark:text-neutral-500 text-sm mt-1">
+              Film essays and cultural criticism published on{" "}
+              <a href="https://thecineprism.com" target="_blank" rel="noopener noreferrer" className="text-amber-600 dark:text-amber-400 hover:underline">The Cinéprism</a>.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+            {PORTFOLIO_CONTENT.articles
+              .filter((a) => a.category === "entertainment")
+              .map((article, idx) => (
+                <motion.a
+                  key={article.href}
+                  href={article.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.35, delay: idx * 0.07 }}
+                  className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/10 bg-white/60 dark:bg-neutral-900/50 hover:border-amber-500/40 dark:hover:border-amber-400/30 hover:bg-amber-50/30 dark:hover:bg-amber-500/5 transition-all duration-300"
+                >
+                  {article.image && (
+                    <div className="relative w-full aspect-[16/9] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                      <Image
+                        src={article.image}
+                        alt={article.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-3 p-5 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="text-[15px] font-semibold text-neutral-900 dark:text-white leading-snug group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                      {article.title}
+                    </h3>
+                    <ArrowRight size={16} className="shrink-0 mt-0.5 text-neutral-400 group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-[13px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                    {article.excerpt}
+                  </p>
+                  <div className="flex items-center gap-3 mt-auto pt-1">
+                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">{article.date}</span>
+                    <span className="text-neutral-300 dark:text-neutral-700">·</span>
+                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">{article.readTime}</span>
+                    <span className="ml-auto text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      The Cinéprism <ExternalLink size={10} />
+                    </span>
+                  </div>
+                  </div>
+                </motion.a>
+              ))}
+          </div>
+
+          {/* Tech Writing */}
+          <div className="mb-8 px-4 md:px-6">
+            <div className="flex items-center gap-3">
+              <BookOpen className="text-emerald-500" size={24} />
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Tech Writing</h2>
+            </div>
+            <p className="text-neutral-600 dark:text-neutral-500 text-sm mt-1">Deep dives on systems, backend engineering, and Rust.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col gap-3 p-5 rounded-2xl border border-dashed border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/30">
+              <p className="text-[13px] text-neutral-500 dark:text-neutral-500 italic">Articles on LSM-tree internals, building Relay from scratch, and distributed systems — coming soon.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* === MEDIUM BLOG SECTION (hidden until Medium URL is set) === */}
+        <div className="mt-4 w-full mb-20 cv-auto hidden">
           <div className="mb-8 px-4 md:px-6">
             <div className="flex items-center gap-3">
               <BookOpen className="text-emerald-500" size={24} />
@@ -700,7 +803,7 @@ export default function Home() {
         {/* Footer */}
         <div className="mt-20 border-t border-neutral-200 dark:border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-neutral-500 text-sm">
-            © {new Date().getFullYear()} Paras. All Rights Reserved.
+            © {new Date().getFullYear()} Ayush Singh. All Rights Reserved.
           </p>
           <div className="flex gap-6 text-sm font-medium text-neutral-500 dark:text-neutral-400">
             {PORTFOLIO_CONTENT.socials
@@ -714,7 +817,7 @@ export default function Home() {
         </div>
       </div>
       <Suspense fallback={null}>
-        <Oneko />
+        <CursorRabbit />
       </Suspense>
     </div>
   );

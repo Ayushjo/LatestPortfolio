@@ -23,6 +23,7 @@ export interface Personal {
   email: string;
   availability: string;
   avatar: string;
+  resumeUrl: string;
 }
 
 export interface Social {
@@ -47,12 +48,25 @@ export interface Project {
   desc: string;
   tags: string[];
   href: string;
-  github: string;
+  github?: string;
   className: string;
   collaborative?: boolean;
   featured?: boolean;
+  previewType?: "site" | "github";
+  siteUrl?: string;
+  previewImage?: string;
 }
 
+
+export interface Article {
+  title: string;
+  excerpt: string;
+  href: string;
+  date: string;
+  readTime: string;
+  category: 'entertainment' | 'tech';
+  image?: string;
+}
 
 export interface SkillCategory {
   label: string;
@@ -68,32 +82,34 @@ export const PORTFOLIO_CONTENT: {
   experience: Experience[];
   projects: Project[];
   contributions: Contribution[];
+  articles: Article[];
   mediumUrl: string;
 } = {
   personal: {
-    name: "Hi, I'm Paras —",
-    surname: "Fullstack Developer.",
-    roles: ["Fullstack Developer.", "AI Engineer.", "Software Engineer."],
-    location: "India",
+    name: "Hi, I'm Ayush —",
+    surname: "Software Engineer.",
+    roles: ["Software Engineer.", "Backend Developer.", "Systems Programmer."],
+    location: "Naya Raipur, India",
     timezone: "Asia/Kolkata",
-    bio: `I build production-ready web and AI applications using TypeScript, React, Next.js, Node.js, FastAPI, RAG — focused on clean UX and real user impact.`,
-    email: "Parasverma7454@gmail.com",
-    availability: "Available for freelance",
-    avatar: "/luffy.jpg",
+    bio: `I build production-grade backend systems and AI-powered applications in TypeScript, Node.js, Rust, and Python — from distributed job engines and LLM agents to LSM-tree databases and reverse proxies.`,
+    email: "ayushsingh202586@gmail.com",
+    availability: "Open to opportunities",
+    avatar: "/avatar.jpg",
+    resumeUrl: "https://drive.google.com/file/d/1JcHt_t-qgagu4bFeV4gToMPt9czSCyn8/view",
   },
   socials: [
     {
       icon: GithubIcon,
-      href: "https://github.com/paras-verma7454",
+      href: "https://github.com/Ayushjo",
       label: "GitHub",
     },
     {
       icon: LinkedinIcon,
-      href: "https://www.linkedin.com/in/paras-vermaa/",
+      href: "https://linkedin.com/in/ayush-singh",
       label: "LinkedIn",
     },
-    { icon: TwitterIcon, href: "https://x.com/ParasVerma7454", label: "Twitter" },
-    { icon: SendIcon, href: "mailto:parasverma7454@gmail.com", label: "Email" },
+    { icon: TwitterIcon, href: "https://x.com/_wickyjohn", label: "Twitter" },
+    { icon: SendIcon, href: "mailto:ayushsingh202586@gmail.com", label: "Email" },
   ],
   // skills: [
   //   "Next.js",
@@ -118,181 +134,182 @@ export const PORTFOLIO_CONTENT: {
   // ],
   skillCategories: [
     {
-      label: "Frontend",
-      skills: ["Next.js", "React", "TypeScript", "JavaScript"],
+      label: "Languages",
+      skills: ["TypeScript", "JavaScript", "Python", "Rust", "Go", "Java", "C++", "SQL"],
     },
     {
-      label: "Backend",
-      skills: ["FastAPI", "Node.js","Python","SQLAlchemy", "Prisma ORM", "PostgreSQL", "MongoDB", "Redis","Docker", "GCP", "AWS"],
+      label: "Backend & Frameworks",
+      skills: ["Node.js", "FastAPI", "Next.js", "React", "Prisma ORM", "Socket.IO"],
     },
     {
-      label: "AI & Agents",
-      skills: ["RAG", "Qdrant", "langChain", "langGraph", "Claude Code"],
+      label: "Data & Infra",
+      skills: ["PostgreSQL", "MongoDB", "Redis", "Neo4j", "BullMQ", "Docker", "AWS", "Nginx"],
     },
-    // {
-    //   label: "Infrastructure",
-    //   skills: [ ],
-    // },
+    {
+      label: "AI & Systems",
+      skills: ["langChain", "RAG", "Claude Code", "scikit-learn"],
+    },
   ],
   experience: [
     {
-      company: "Jspark AI",
-      // companyUrl: "https://jspark.ai",
-      role: "Software Engineer Intern",
-      period: "Nov 2025 - Jun 2026",
-      startDate: "2025-11-01",
-      description: "Worked as a full-stack developer building scalable web applications and backend systems.",
-      // points: [
-      //   "Built a multi-role CRM system with RBAC, enabling structured workflows.",
-      //   "Built a weather forecast platform using IMD datasets for real-time data delivery.",
-      //   "Contributed to end-to-end feature development across frontend and backend."
-      // ],
-      // linkedin: "https://linkedin.com/company/jsparkai",
+      company: "Amrevx Pvt. Ltd. (TRADElogs)",
+      companyUrl: "https://tradelogs.com",
+      role: "Software Development Engineer Intern",
+      period: "Jul. 2026 – Present",
+      startDate: "2026-07-01",
+      description: "Building backend systems for TRADElogs, a MetaTrader-5 trading journal SaaS.",
+      points: [
+        "Built a live AI trading coach: an LLM chatbot (Groq) answering natural-language questions about trading behaviour, grounded on real account data via a token-bounded context pipeline.",
+        "Implemented real-time token streaming over Server-Sent Events with per-user Redis rate limiting and rule-based fallback; engineered compliance guardrails and prompt-injection defenses.",
+        "Integrated a Python/FastAPI MetaTrader-5 bridge with the Node backend to sync live broker trades, fixing a concurrency bug on the broker's single-terminal lock that caused intermittent 500s.",
+      ],
+    },
+    {
+      company: "VedaAI (Vedafy Technologies Pvt. Ltd.)",
+      role: "SDE Intern",
+      period: "Jun. 2026 – Jul. 2026",
+      startDate: "2026-06-01",
+      description: "Shipped core integrations and backend services for a B2B education platform.",
+      points: [
+        "Shipped the Google Classroom integration for VedaAI v3, syncing rosters, courses, and assignments so teachers could onboard existing classes without manual setup.",
+        "Built scalable backend services and REST APIs, owning features end-to-end alongside the founding team.",
+        "Reworked UI/UX across key product surfaces to improve usability and consistency.",
+      ],
+    },
+    {
+      company: "TheCinePrism",
+      companyUrl: "https://thecineprism.com",
+      role: "Freelance Full-Stack Developer",
+      period: "Jul. 2025 – Present",
+      startDate: "2025-07-01",
+      description: "Building and maintaining a production movie review and newsletter platform.",
+      points: [
+        "Serves 36,000+ active users with 253,000+ monthly events; achieved sub-100ms API response via Redis caching.",
+        "Deployed on AWS with Docker CI/CD, Cashfree payments, SES, and BullMQ queuing.",
+        "Cut monthly infra costs 60% ($47 → $16–20) by dropping ALB/NAT Gateway for a single EC2 t2.micro with self-hosted Redis and Nginx.",
+      ],
+    },
+    {
+      company: "Rootvesters",
+      role: "Backend Developer Intern",
+      period: "May 2026 – Nov. 2026",
+      startDate: "2026-05-01",
+      description: "Built LearnGraph, an adaptive JEE/NEET Chemistry prep platform.",
+      points: [
+        "Modeled 25 chapters, 100 subtopics, and 325 concepts on Neo4j with Ebbinghaus forgetting curve and IRT-based scoring.",
+        "Integrated Claude API for question generation with subtopic-level progressive unlocking.",
+        "Fixed a backwards Neo4j edge-direction bug breaking prerequisite traversal and migrated the full curriculum across PostgreSQL and graph layers.",
+      ],
     },
   ],
   projects: [
     {
-      title: "Review Scope",
-      desc: "Automated code reviews that go beyond the diff. Catch bugs and enforce standards with an AI that understands your entire repository context.",
-      tags: ["Next.js", "Hono", "webhook", "Gemini API","Open AI"],
-      href: "https://reviewscope.luffytaro.me",
-      github: "https://github.com/Review-scope/ReviewScope",
+      title: "Strata",
+      desc: "Embedded LSM-tree key-value store in Rust — WAL, memtable, block-based SSTables, size-tiered compaction, and Bloom filters. Benchmarked at 1.87M writes/sec (fsync off) and 24× faster absent-key lookups with Bloom filters vs without.",
+      tags: ["Rust", "LSM-tree", "Key-Value Store", "Systems"],
+      href: "https://github.com/Ayushjo/Strata",
+      github: "https://github.com/Ayushjo/Strata",
       className: "md:col-span-1",
+      featured: true,
+      previewType: "github",
     },
     {
-      title: "Orizen Flow",
-      desc: "Automatically analyze resumes, portfolios, and GitHub to identify the strongest candidates with technical precision.",
-      tags: ["Next.js", "Hono", "Sarvam AI"],
-      href: "https://orizenflow.luffytaro.me",
-      github: "https://github.com/paras-verma7454/orizenflow",
+      title: "Relay",
+      desc: "Async reverse proxy / API gateway in Rust (tokio, axum/hyper). Least-connections load balancing cut traffic to a slow backend from ~33% to ~2% vs round-robin. Sharded per-client token-bucket rate limiting at ~54ns/check, validated across 500 clients and 75,000+ requests with zero incorrect rejections. Benchmarked at ~70k req/s, ~5ms p99 — within ~1% of nginx at matched concurrency.",
+      tags: ["Rust", "tokio", "axum", "API Gateway", "Systems"],
+      href: "https://github.com/Ayushjo/Relay",
+      github: "https://github.com/Ayushjo/Relay",
       className: "md:col-span-1",
+      featured: true,
+      previewType: "github",
     },
     {
-      title: "Orizen TUI",
-      desc: "Open-source terminal UI components for Node.js CLI applications. Build beautiful terminal interfaces with a shadcn-style copy workflow.",
-      tags: ["Next.js", "React Ink"],
-      href: "https://orizen-tui.vercel.app",
-      github: "https://github.com/paras-verma7454/orizen-tui",
+      title: "Pullwright",
+      desc: "Autonomous GitHub issue-resolution agent: submit an issue, AI plans the fix, executes tool calls in an isolated Docker sandbox, and opens a PR end-to-end. Live SSE dashboard streams every LLM call and tool invocation. Hybrid LLM router across 5 providers with Redis-backed per-task $0.10 budget guard; shipped 8-file fixes in ~15 min and sub-$0.02 fixes in ~7 min.",
+      tags: ["Node.js", "TypeScript", "Docker", "Redis", "BullMQ", "Multi-LLM", "React"],
+      href: "https://github.com/Ayushjo/MyOwnDevin",
+      github: "https://github.com/Ayushjo/MyOwnDevin",
       className: "md:col-span-1",
+      previewType: "site",
+      previewImage: "/previews/pullwright.png",
     },
     {
-      title: "Paper Mind ",
-      desc: "PaperMind is a simple Retrieval-Augmented Generation (RAG) system that lets you chat with PDF documents using modern AI tools.",
-      tags: ["RAG", "Qdrant", "Python","Gemini API"],
-      href: "https://github.com/paras-verma7454/PaperMind",
-      github: "https://github.com/paras-verma7454/PaperMind",
+      title: "TRADElogs",
+      desc: "MetaTrader-5 trading journal SaaS that auto-imports every fill, surfaces behavioral insights (tilt, revenge trades, session patterns), and delivers weekly AI reviews. Built the live AI trading coach with Groq over SSE, Redis rate limiting, and a Python/FastAPI MT5 bridge syncing broker trades in real time.",
+      tags: ["Node.js", "TypeScript", "FastAPI", "Redis", "Groq", "MetaTrader 5"],
+      href: "https://tradelogs.com",
       className: "md:col-span-1",
+      previewType: "site",
+      previewImage: "/previews/tradelogs.png",
     },
     {
-      title: "CalMarshal",
-      desc: "Streamlined event scheduling platform featuring seamless Google Calendar integration and real-time availability tracking.",
-      tags: ["Next.js", "Prisma", "Nylas", "Next.js"],
-      href: "https://cal-marshal-phi.vercel.app",
-      github: "https://github.com/paras-verma7454/CalMarshal",
+      title: "TheCinePrism",
+      desc: "Production movie review and newsletter platform serving 36,000+ active users with 253,000+ monthly events. Sub-100ms API response via Redis caching, deployed on AWS with Docker CI/CD, SES, and BullMQ.",
+      tags: ["Node.js", "TypeScript", "React", "Redis", "AWS", "BullMQ"],
+      href: "https://thecineprism.com",
+      github: "https://github.com/Ayushjo/CineprismFE",
       className: "md:col-span-1",
+      previewType: "site",
+      previewImage: "/previews/cineprism.png",
     },
     {
-      title: "Dionysus",
-      desc: "Executive AI assistant that automates meeting notes, performs deep code analysis, and enhances developer productivity using LLMs.",
-      tags: ["Gemini API", "Supabase", "Assembly AI", "Next.js"],
-      href: "https://dionysus-zeta.vercel.app/",
-      github: "https://github.com/paras-verma7454/Dionysus",
+      title: "ICS Multi-Agent Fault Detection",
+      desc: "6-agent AI platform achieving 99.83% fault detection accuracy on the SWaT dataset (Random Forest), with a real-time WebSocket dashboard over 51 sensor points.",
+      tags: ["Python", "Flask", "React", "scikit-learn", "Docker"],
+      href: "https://github.com/Ayushjo/ics-minor",
+      github: "https://github.com/Ayushjo/ics-minor",
       className: "md:col-span-1",
+      previewType: "github",
     },
     {
-      title: "Bolt New",
-      desc: "Advanced prompt-to-app generator that transforms natural language into production-ready React applications with instant previews.",
-      tags: ["Convex", "Next.js", "Gemini", "Tailwind", "Code sandbox"],
-      href: "https://bolt-new-olive.vercel.app/",
-      github: "https://github.com/paras-verma7454/bolt.new",
+      title: "LearnGraph",
+      desc: "Adaptive JEE/NEET Chemistry prep platform with 25 chapters, 100 subtopics, and 325 concepts modeled on Neo4j with Ebbinghaus forgetting curve and IRT-based scoring.",
+      tags: ["Node.js", "TypeScript", "Neo4j", "PostgreSQL", "Claude API"],
+      href: "https://github.com/Ayushjo/learngraph-backend",
+      github: "https://github.com/Ayushjo/learngraph-backend",
       className: "md:col-span-1",
-    },
-    {
-      title: "DriveDeck",
-      desc: "Dynamic automotive marketplace platform designed for high-performance car trading with integrated management tools.",
-      tags: ["React.js", "Node.js", "PostgreSQL"],
-      href: "https://drive-deck.vercel.app/",
-      github: "https://github.com/paras-verma7454/DriveDeck",
-      className: "md:col-span-1",
-    },
-    {
-      title: "Chat App",
-      desc: "Real-time communication platform powered by WebSockets, featuring instant messaging and low-latency data synchronization.",
-      tags: ["React.js", "Node.js", "WebSockets"],
-      href: "https://github.com/paras-verma7454/chat-app",
-      github: "https://github.com/paras-verma7454/chat-app",
-      className: "md:col-span-1",
-    },
-    {
-      title: "Paytm",
-      desc: "Comprehensive fintech solution for digital payments, enabling secure peer-to-peer transfers and robust account management.",
-      tags: ["React.js", "Node.js", "MongoDB"],
-      href: "https://paytm-livid.vercel.app/",
-      github: "https://github.com/paras-verma7454/Paytm",
-      className: "md:col-span-1",
-    },
-    {
-      title: "Medium",
-      desc: "Full-featured blogging platform with markdown support, content discovery, and a rich reading experience — built with Hono and Prisma.",
-      tags: ["React.js", "Hono", "Prisma ORM"],
-      href: "https://medium-kappa-nine.vercel.app/",
-      github: "https://github.com/paras-verma7454/Medium",
-      className: "md:col-span-1",
+      previewType: "github",
     },
   ],
   contributions: [
+  ],
+  articles: [
     {
-      prUrl:"https://github.com/itshover/itshover/pull/58",
-      status:"merged"
+      title: "Why The Odyssey Is a Must-Watch for Indians",
+      excerpt: "Nolan's The Odyssey isn't a distant Greek myth for Indians — it's our own story of exile, war, and the long road home.",
+      href: "https://thecineprism.com/s/XfNsS0h",
+      date: "Jul 18, 2026",
+      readTime: "7 min read",
+      category: "entertainment",
+      image: "/odysseyarticle.png",
     },
     {
-      prUrl:"https://github.com/MxCorpIn/ossium/pull/17",
-      title:"feat: Implement Smart Alerts for premium users",
-      private:true,
-      url:"https://www.linkedin.com/posts/paras-vermaa_buildinpublic-saas-developerexperience-activity-7413798950589259776-NDcn?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD05PBwB23RB7tDRtbGEloj7PwjWHcbvFSI",
-      status:"merged"
+      title: "Before Heroes, There Was Rama: Ramayana",
+      excerpt: "About Namit Malhotra's Ramayana — one of the most ambitious films in the history of Indian cinema, bringing Ranbir Kapoor, Yash, and Hans Zimmer together.",
+      href: "https://thecineprism.com/s/3IE9AgD",
+      date: "Apr 2, 2026",
+      readTime: "5 min read",
+      category: "entertainment",
+      image: "/ramayana.png",
     },
     {
-      prUrl:"https://github.com/MxCorpIn/ossium/pull/3",
-      title:"Feat: overhaul bounties page, navigation, and language detection",
-      private:true,
-      url:"https://www.linkedin.com/posts/paras-vermaa_opensource-webdevelopment-frontend-activity-7409948094131253248-mnej?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD05PBwB23RB7tDRtbGEloj7PwjWHcbvFSI",
-      status:"merged"
+      title: "Nobody Does Folklore Like Bollywood",
+      excerpt: "From Stree to Tumbbad, Hindi cinema has long been a vessel for folklore — myths, regional legends, and oral traditions reimagined on the modern screen.",
+      href: "https://thecineprism.com/s/hfquqzd",
+      date: "Oct 26, 2025",
+      readTime: "2 min read",
+      category: "entertainment",
+      image: "/folkflore.png",
     },
     {
-      prUrl:"https://github.com/MxCorpIn/ossium/pull/28",
-      title:"FIX: Daily/weekly Emails digest",
-      private:true,
-      status:"merged"
-    },
-    {
-      prUrl:"https://github.com/MxCorpIn/ossium/pull/29",
-      title:"refactor: optimize digest cron performance and improve email UI ",
-      private:true,
-      status:"merged"
-    },
-    {
-      prUrl:"https://github.com/MxCorpIn/ossium/pull/9",
-      title:"feat: Improve GSoC and Issues UIs",
-      private:true,
-      status:"merged"
-    },
-    {
-      prUrl: "https://github.com/MxCorpIn/blogs/pull/13",
-      status:"open"
-    },
-    {
-      prUrl: "https://github.com/MxCorpIn/blogs/pull/14",
-      status:"open"
-    },
-    {
-      prUrl: "https://github.com/fastapi/fastapi/pull/14565",
-      status:"merged"
-    },
-    {
-      prUrl: "https://github.com/ig-imanish/mx-icons/pull/9",
-      status:"merged"
+      title: "Movies Should Be Watched at Cinema Halls",
+      excerpt: "Why going to the cinema is important for an experience — on surrender, immersion, and why OTT can't replicate what a darkened hall gives you.",
+      href: "https://thecineprism.com/s/g2FKGF7",
+      date: "Oct 10, 2025",
+      readTime: "2 min read",
+      category: "entertainment",
+      image: "/moviesatcinema.png",
     },
   ],
-  mediumUrl: "https://medium.com/@parasverma7454",
+  mediumUrl: "https://medium.com/@ayushsingh",
 };

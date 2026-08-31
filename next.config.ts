@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'opengraph.github.com' },
       { protocol: 'https', hostname: 'cdn.simpleicons.org' },
       { protocol: 'https', hostname: 'github.com' },
+      { protocol: 'https', hostname: 'opengraph.githubassets.com' },
+      { protocol: 'https', hostname: 'iad.microlink.io' },
+      { protocol: 'https', hostname: 's3.amazonaws.com' },
     ],
   },
   experimental: {

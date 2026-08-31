@@ -1,10 +1,8 @@
 "use server";
 
-async function extractOgImage(
-  url: string
-): Promise<string | null> {
+async function extractOgImage(url: string): Promise<string | null> {
   const response = await fetch(url, {
-    next: { revalidate: 86400 }, // Cache for 24 hours
+    next: { revalidate: 86400 },
     headers: {
       "User-Agent":
         "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
@@ -23,20 +21,38 @@ async function extractOgImage(
     }
   };
 
-  // Match <meta property="og:image" content="..." />
-  const matchAfter = html.match(
-    /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i
-  );
-  if (matchAfter?.[1]) return getAbsoluteUrl(matchAfter[1]);
+  const patterns = [
+    /<meta[^>]*property=["']og:image(?::secure_url)?["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image(?::secure_url)?["'][^>]*>/i,
+    /<meta[^>]*name=["']twitter:image(?::src)?["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image(?::src)?["'][^>]*>/i,
+  ];
 
-  // Match <meta content="..." property="og:image" />
-  const matchBefore = html.match(
-    /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i
-  );
-  if (matchBefore?.[1]) return getAbsoluteUrl(matchBefore[1]);
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return getAbsoluteUrl(match[1]);
+  }
 
   return null;
 }
+
+async function fetchSiteScreenshot(url: string): Promise<string | null> {
+  try {
+    const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false`;
+    const response = await fetch(apiUrl, { next: { revalidate: 86400 } });
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      data?: { screenshot?: { url?: string } };
+    };
+    return data.data?.screenshot?.url ?? null;
+  } catch (error) {
+    console.error("Failed to fetch site screenshot for:", url, error);
+    return null;
+  }
+}
+
+export type PreviewType = "site" | "github";
 
 export async function getOgImage(
   url: string,
@@ -44,7 +60,6 @@ export async function getOgImage(
 ): Promise<string | null> {
   if (!url) return null;
 
-  // Try primary URL first
   try {
     const result = await extractOgImage(url);
     if (result) return result;
@@ -52,7 +67,6 @@ export async function getOgImage(
     console.error("Failed to fetch OG image for:", url, error);
   }
 
-  // Fallback to GitHub URL if provided and different
   if (fallbackUrl && fallbackUrl !== url) {
     try {
       const result = await extractOgImage(fallbackUrl);
@@ -63,4 +77,31 @@ export async function getOgImage(
   }
 
   return null;
+}
+
+export async function getProjectPreview(options: {
+  previewType: PreviewType;
+  siteUrl?: string;
+  githubUrl?: string;
+  staticImage?: string;
+}): Promise<string | null> {
+  const { previewType, siteUrl, githubUrl, staticImage } = options;
+
+  if (staticImage) return staticImage;
+
+  if (previewType === "github") {
+    if (!githubUrl) return null;
+    return getOgImage(githubUrl);
+  }
+
+  if (!siteUrl) return null;
+
+  try {
+    const ogImage = await extractOgImage(siteUrl);
+    if (ogImage) return ogImage;
+  } catch (error) {
+    console.error("Failed to fetch site OG image for:", siteUrl, error);
+  }
+
+  return fetchSiteScreenshot(siteUrl);
 }

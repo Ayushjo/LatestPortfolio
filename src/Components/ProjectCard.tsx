@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ArrowUpRight, Github, Users } from "lucide-react";
-import { getOgImage } from "@/actions/getOgImage";
+import { getProjectPreview } from "@/actions/getOgImage";
 import { Tooltip } from "./ui/tooltip-card";
 import TypeScript from "./Typescript";
 import NextJs from "./NextJS";
@@ -10,20 +10,18 @@ import Prisma from "./Prisma";
 import PostgreSQL from "./PostgreSQL";
 import FastAPI from "./FastAPI";
 
-// Skill icon mapping
 const skillIcons: Record<string, React.FC<{ className?: string }>> = {
-  "TypeScript": TypeScript,
+  TypeScript: TypeScript,
   "Next.js": NextJs,
   "React.js": ReactIcon,
-  "React": ReactIcon,
+  React: ReactIcon,
   "Node.js": NodeJs,
-  "Prisma": Prisma,
+  Prisma: Prisma,
   "Prisma ORM": Prisma,
-  "PostgreSQL": PostgreSQL,
-  "FastAPI": FastAPI,
+  PostgreSQL: PostgreSQL,
+  FastAPI: FastAPI,
 };
 
-// Module-level cache: deduplicate server action calls across all cards & StrictMode double-invocations
 const ogImageCache = new Map<string, string | null>();
 const ogImagePending = new Map<string, Promise<string | null>>();
 
@@ -38,28 +36,31 @@ interface ProjectCardProps {
     featured?: boolean;
     collaborative?: boolean;
     className?: string;
+    previewType?: "site" | "github";
+    siteUrl?: string;
+    previewImage?: string;
   };
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const { title, desc, tags, href, featured } = project;
   const github = project.github;
-  const [ogImage, setOgImage] = useState<string | null>(null);
+  const previewType = project.previewType ?? "github";
+  const siteUrl = project.siteUrl;
+  const previewImage = project.previewImage;
+  const [ogImage, setOgImage] = useState<string | null>(previewImage ?? null);
 
   useEffect(() => {
     let isMounted = true;
+
     async function fetchImage() {
-      if (!href) return;
+      const cacheKey = `preview:${previewType}|${siteUrl ?? ""}|${github ?? ""}|${previewImage ?? ""}`;
 
-      const cacheKey = `og-image:${href}|${github ?? ""}`;
-
-      // 1. Check in-memory cache first
       if (ogImageCache.has(cacheKey)) {
         if (isMounted) setOgImage(ogImageCache.get(cacheKey) ?? null);
         return;
       }
 
-      // 2. Check localStorage cache
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached !== null) {
@@ -68,28 +69,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             ogImageCache.set(cacheKey, parsed.url);
             if (isMounted) setOgImage(parsed.url);
             return;
-          } else {
-            localStorage.removeItem(cacheKey);
           }
+          localStorage.removeItem(cacheKey);
         }
       } catch (e) {
         console.warn("Failed to read from localStorage", e);
       }
 
-      // 3. Fallback to server action
       let pending = ogImagePending.get(cacheKey);
       if (!pending) {
-        pending = getOgImage(href, github).then((result) => {
+        pending = getProjectPreview({
+          previewType,
+          siteUrl,
+          githubUrl: github,
+          staticImage: previewImage,
+        }).then((result) => {
           ogImageCache.set(cacheKey, result);
           ogImagePending.delete(cacheKey);
-          
+
           try {
-            const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000; // Cache for 7 days
+            const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
             localStorage.setItem(cacheKey, JSON.stringify({ url: result, expiry }));
           } catch (e) {
             console.warn("Failed to write to localStorage", e);
           }
-          
+
           return result;
         });
         ogImagePending.set(cacheKey, pending);
@@ -99,14 +103,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         const url = await pending;
         if (isMounted) setOgImage(url);
       } catch (error) {
-        console.error("Failed to fetch OG image", error);
+        console.error("Failed to fetch preview image", error);
       }
     }
+
     fetchImage();
     return () => {
       isMounted = false;
     };
-  }, [href, github]);
+  }, [previewType, siteUrl, github, previewImage]);
 
   const TooltipContent = ogImage ? (
     <div className="flex flex-col items-center justify-center p-0 rounded-xl overflow-hidden bg-black shadow-xl">
@@ -127,100 +132,26 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     </div>
   );
 
-  if (featured) {
+  const tagPillClass =
+    "inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-[10px] font-medium text-neutral-600 dark:text-neutral-300 uppercase tracking-wide whitespace-nowrap";
+
+  const renderTag = (tag: string, index: number) => {
+    const IconComponent = skillIcons[tag];
+
     return (
-      <Tooltip
-        content={TooltipContent}
-        containerClassName="w-full h-full flex flex-col justify-between group/card cursor-pointer"
-      >
-        <div className="relative flex flex-col justify-between h-full">
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Open ${title} live site`}
-            className="absolute inset-0 z-0 rounded-2xl"
-          />
-          <div className="absolute top-0 right-0 flex items-start gap-2 z-20">
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${title} live site`}
-              className="text-neutral-400 dark:text-neutral-500 group-hover/card:text-black dark:group-hover/card:text-white transition-colors"
-            >
-              <ArrowUpRight size={20} />
-            </a>
-            {project.github && (
-              <a
-                href={project.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Open ${title} GitHub repo`}
-                className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white focus:text-black dark:focus:text-white transition-colors"
-              >
-                <Github size={20} />
-              </a>
-            )}
-          </div>
-          <div>
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block relative z-10 pr-14"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-bold text-neutral-900 dark:text-white group-hover/card:text-blue-500 dark:group-hover/card:text-blue-400 transition-colors">
-                  {title}
-                </h3>
-                {project.collaborative && (
-                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-500 dark:text-blue-400 font-medium">
-                    <Users size={10} />
-                    Collab
-                  </span>
-                )}
-              </div>
-              <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-4 line-clamp-3">
-                {desc}
-              </p>
-            </a>
-            <div className="flex flex-wrap gap-2 relative z-10">
-              {tags.map((tag: string, index: number) => {
-                const IconComponent = skillIcons[tag];
-                if (IconComponent) {
-                  return (
-                    <span
-                      key={`${tag}-${index}`}
-                      className="w-5 h-5 flex items-center justify-center"
-                      title={tag}
-                    >
-                      <IconComponent className="w-4 h-4" />
-                    </span>
-                  );
-                }
-                return (
-                  <span
-                    key={`${tag}-${index}`}
-                    className="px-2 py-1 rounded bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-[10px] text-neutral-600 dark:text-neutral-300 uppercase"
-                  >
-                    {tag}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </Tooltip>
+      <span key={`${tag}-${index}`} className={tagPillClass} title={tag}>
+        {IconComponent ? <IconComponent className="w-3 h-3 shrink-0" /> : null}
+        <span>{tag}</span>
+      </span>
     );
-  }
+  };
 
   return (
     <Tooltip
       content={TooltipContent}
-      containerClassName="w-full h-full flex flex-col justify-between group/card cursor-pointer"
+      containerClassName="w-full h-full flex flex-col group/card cursor-pointer"
     >
-      <div className="relative flex flex-col h-full justify-between">
+      <div className="relative flex flex-col h-full min-h-[220px]">
         <a
           href={href}
           target="_blank"
@@ -228,74 +159,59 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           aria-label={`Open ${title} live site`}
           className="absolute inset-0 z-0 rounded-2xl"
         />
-        <div>
-          <div className="absolute top-0 right-0 flex items-start gap-2 z-20">
+        <div className="absolute top-0 right-0 flex items-start gap-2 z-20">
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${title} live site`}
+            className="text-neutral-400 dark:text-neutral-500 group-hover/card:text-black dark:group-hover/card:text-white transition-colors"
+          >
+            <ArrowUpRight size={20} />
+          </a>
+          {project.github && (
             <a
-              href={href}
+              href={project.github}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Open ${title} live site`}
-              className="text-neutral-400 dark:text-neutral-500 group-hover/card:text-black dark:group-hover/card:text-white transition-colors"
+              aria-label={`Open ${title} GitHub repo`}
+              className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white focus:text-black dark:focus:text-white transition-colors"
             >
-              <ArrowUpRight size={20} />
+              <Github size={20} />
             </a>
-            {project.github && (
-              <a
-                href={project.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Open ${title} GitHub repo`}
-                className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white focus:text-black dark:focus:text-white transition-colors"
-              >
-                <Github size={20} />
-              </a>
-            )}
-          </div>
+          )}
+        </div>
+
+        <div className="flex flex-col flex-1 min-h-0">
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
             className="block relative z-10 pr-14"
           >
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white group-hover/card:text-blue-500 dark:group-hover/card:text-blue-400 transition-colors">
+            <div className="flex items-center gap-2 mb-2">
+              <h3
+                className={`font-bold text-neutral-900 dark:text-white group-hover/card:text-blue-500 dark:group-hover/card:text-blue-400 transition-colors ${
+                  featured ? "text-xl" : "text-lg"
+                }`}
+              >
                 {title}
               </h3>
               {project.collaborative && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[8px] text-blue-500 dark:text-blue-400 font-medium whitespace-nowrap">
-                  <Users size={8} />
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-500 dark:text-blue-400 font-medium">
+                  <Users size={10} />
                   Collab
                 </span>
               )}
             </div>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400 whitespace-normal line-clamp-3">
+            <p className="text-neutral-600 dark:text-neutral-400 text-sm line-clamp-3">
               {desc}
             </p>
           </a>
         </div>
-        <div className="flex flex-wrap gap-2 mt-4 relative z-10">
-          {tags.map((tag: string, index: number) => {
-            const IconComponent = skillIcons[tag];
-            if (IconComponent) {
-              return (
-                <span
-                  key={`${tag}-${index}`}
-                  className="w-5 h-5 flex items-center justify-center"
-                  title={tag}
-                >
-                  <IconComponent className="w-4 h-4" />
-                </span>
-              );
-            }
-            return (
-              <span
-                key={`${tag}-${index}`}
-                className="text-[10px] uppercase tracking-wider text-neutral-600 dark:text-neutral-500"
-              >
-                {tag}
-              </span>
-            );
-          })}
+
+        <div className="relative z-10 mt-auto pt-4 flex flex-wrap items-center justify-start gap-1.5">
+          {tags.map(renderTag)}
         </div>
       </div>
     </Tooltip>

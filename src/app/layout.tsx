@@ -9,22 +9,24 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Paras Verma — Fullstack Developer',
-  description: 'I build production-ready web and AI applications using TypeScript, React, Next.js, Node.js, FastAPI — focused on clean UX and real user impact.',
+  title: 'Ayush Singh — Software Engineer',
+  description: 'Backend engineer and systems programmer building production-grade distributed systems, AI agents, and Rust-based infrastructure.',
   icons: {
-    icon: '/Favicon.png',
+    icon: [{ url: '/avatar.jpg', type: 'image/jpeg' }],
+    apple: [{ url: '/avatar.jpg', type: 'image/jpeg' }],
+    shortcut: '/avatar.jpg',
   },
   openGraph: {
-    title: 'Paras Verma — Fullstack Developer',
-    description: 'I build production-ready web and AI applications using TypeScript, React, Next.js, Node.js, FastAPI — focused on clean UX and real user impact.',
-    images: ['/image.png'],
+    title: 'Ayush Singh — Software Engineer',
+    description: 'Backend engineer and systems programmer building production-grade distributed systems, AI agents, and Rust-based infrastructure.',
+    images: ['/avatar.jpg'],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Paras Verma — Fullstack Developer',
-    description: 'I build production-ready web and AI applications using TypeScript, React, Next.js, Node.js, FastAPI — focused on clean UX and real user impact.',
-    images: ['/image.png'],
+    title: 'Ayush Singh — Software Engineer',
+    description: 'Backend engineer and systems programmer building production-grade distributed systems, AI agents, and Rust-based infrastructure.',
+    images: ['/avatar.jpg'],
   },
 };
 
