@@ -11,11 +11,6 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Ayush Singh — Software Engineer',
   description: 'Backend engineer and systems programmer building production-grade distributed systems, AI agents, and Rust-based infrastructure.',
-  icons: {
-    icon: [{ url: '/avatar.jpg', type: 'image/jpeg' }],
-    apple: [{ url: '/avatar.jpg', type: 'image/jpeg' }],
-    shortcut: '/avatar.jpg',
-  },
   openGraph: {
     title: 'Ayush Singh — Software Engineer',
     description: 'Backend engineer and systems programmer building production-grade distributed systems, AI agents, and Rust-based infrastructure.',
