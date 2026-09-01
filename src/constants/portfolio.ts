@@ -227,10 +227,11 @@ export const PORTFOLIO_CONTENT: {
       title: "Pullwright",
       desc: "Autonomous GitHub issue-resolution agent: submit an issue, AI plans the fix, executes tool calls in an isolated Docker sandbox, and opens a PR end-to-end. Live SSE dashboard streams every LLM call and tool invocation. Hybrid LLM router across 5 providers with Redis-backed per-task $0.10 budget guard; shipped 8-file fixes in ~15 min and sub-$0.02 fixes in ~7 min.",
       tags: ["Node.js", "TypeScript", "Docker", "Redis", "BullMQ", "Multi-LLM", "React"],
-      href: "https://github.com/Ayushjo/MyOwnDevin",
+      href: "https://pullwright.iayush.com",
       github: "https://github.com/Ayushjo/MyOwnDevin",
       className: "md:col-span-1",
       previewType: "site",
+      siteUrl: "https://pullwright.iayush.com",
       previewImage: "/previews/pullwright.png",
     },
     {

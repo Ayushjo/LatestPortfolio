@@ -50,6 +50,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const previewImage = project.previewImage;
   const [ogImage, setOgImage] = useState<string | null>(previewImage ?? null);
 
+  const isGithubLink = (url: string) => url.includes("github.com");
+  const primaryLink = href;
+  const showGithubLink = Boolean(github && github !== primaryLink);
+  const openLabel = isGithubLink(primaryLink)
+    ? `Open ${title} on GitHub`
+    : `Open ${title} live site`;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -153,23 +160,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     >
       <div className="relative flex flex-col h-full min-h-[220px]">
         <a
-          href={href}
+          href={primaryLink}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Open ${title} live site`}
+          aria-label={openLabel}
           className="absolute inset-0 z-0 rounded-2xl"
         />
         <div className="absolute top-0 right-0 flex items-start gap-2 z-20">
           <a
-            href={href}
+            href={primaryLink}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Open ${title} live site`}
+            aria-label={openLabel}
             className="text-neutral-400 dark:text-neutral-500 group-hover/card:text-black dark:group-hover/card:text-white transition-colors"
           >
             <ArrowUpRight size={20} />
           </a>
-          {project.github && (
+          {showGithubLink && github && (
             <a
               href={project.github}
               target="_blank"
@@ -184,7 +191,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
         <div className="flex flex-col flex-1 min-h-0">
           <a
-            href={href}
+            href={primaryLink}
             target="_blank"
             rel="noopener noreferrer"
             className="block relative z-10 pr-14"
