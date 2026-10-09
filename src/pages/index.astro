@@ -11,12 +11,17 @@ import Rail from '../components/Rail.astro';
 import OpenSource from '../components/OpenSource.astro';
 import Activity from '../components/Activity.astro';
 import Writing from '../components/Writing.astro';
+import Contact from '../components/Contact.astro';
 import { profile } from '../content/profile';
 ---
 
 <Base>
   <header class="site-header">
-    <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+    <nav class="nav" aria-label="Primary">
+      <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+      <a class="nav-link" href="/writing/">Writing</a>
+      <a class="nav-link" href="#contact" data-scroll-to="#contact">Contact</a>
+    </nav>
     <ModeSlider />
   </header>
 
@@ -34,6 +39,7 @@ import { profile } from '../content/profile';
     <Writing />
     <RecruiterView />
   </main>
+  <Contact />
 
   <noscript>
     <style>
@@ -73,6 +79,30 @@ import { profile } from '../content/profile';
   .mark span {
     color: var(--fg-faint);
     margin: 0 2px;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .nav-link {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    color: var(--fg-dim);
+    transition: color 0.3s var(--ease-out);
+  }
+  .nav-link:hover {
+    color: var(--fg);
+  }
+  :global(:root[data-mode='recruiter']) .nav-link[href='#contact'] {
+    display: none;
+  }
+  @media (max-width: 560px) {
+    .nav-link {
+      display: none;
+    }
   }
   @media print {
     .site-header {

@@ -1,0 +1,88 @@
+---
+import Base from '../layouts/Base.astro';
+import ModeSlider from '../components/ModeSlider.astro';
+import { profile } from '../content/profile';
+---
+
+<Base title={`Lost in the stream — ${profile.name}`}>
+  <header class="site-header">
+    <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+    <ModeSlider />
+  </header>
+  <canvas class="gl-canvas experience-only" data-gl aria-hidden="true"></canvas>
+  <main>
+    <section class="lost" data-beat="text:404" data-side="center" data-label="404" data-group="404">
+      <div class="copy">
+        <h1>Lost in the stream.</h1>
+        <p>This page doesn’t exist — or it flowed somewhere else.</p>
+        <a class="pill" href="/">Back to the start</a>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/main';
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px var(--gutter);
+  }
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+  .mark span {
+    color: var(--fg-faint);
+    margin: 0 2px;
+  }
+  .lost {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 var(--gutter) 14vh;
+    text-align: center;
+  }
+  .copy {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.4rem, 1.4rem + 3vw, 4.4rem);
+    line-height: 1;
+  }
+  p {
+    margin: 0;
+    color: var(--fg-dim);
+  }
+  .pill {
+    margin-top: 8px;
+    padding: 11px 18px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-decoration: none;
+  }
+  .pill:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+</style>

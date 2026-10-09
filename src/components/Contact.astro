@@ -1,0 +1,168 @@
+---
+import Tone from './Tone.astro';
+import { profile } from '../content/profile';
+
+const [user, domain] = profile.email.split('@');
+const links = [
+  { label: 'GitHub', href: profile.links.github },
+  { label: 'LinkedIn', href: profile.links.linkedin },
+  { label: 'X', href: profile.links.twitter },
+  { label: 'Résumé (PDF)', href: profile.links.resume },
+];
+---
+
+<section class="contact experience-only" id="contact" data-beat={`serif:${user}|@${domain}`} data-side="center" data-label="Contact" data-group="Contact" aria-labelledby="contact-title">
+  <div class="contact-sticky">
+    <h2 id="contact-title">
+      <Tone text={{ immersive: 'Let’s build something.', casual: 'Say hi — my inbox is open.', recruiter: 'Contact' }} />
+    </h2>
+    <p class="actions">
+      <a class="pill primary" href={`mailto:${profile.email}`}>{profile.email}</a>
+      <button class="pill" type="button" data-copy={profile.email}>
+        <span class="idle">Copy email</span><span class="done">Copied ✓</span>
+      </button>
+    </p>
+    <ul class="links">
+      {
+        links.map((l) => (
+          <li>
+            <a href={l.href} target="_blank" rel="noopener">
+              {l.label} <span aria-hidden="true">↗</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <p>© {new Date().getFullYear()} {profile.name}</p>
+  <p>
+    {profile.location} · <span data-local-time>—</span> IST
+  </p>
+  <p>
+    <a href="/writing/">Writing</a> · <a href="/rss.xml">RSS</a> · <button type="button" class="link-btn" data-set-mode="recruiter">Recruiter view</button>
+  </p>
+</footer>
+
+<style>
+  .contact {
+    position: relative;
+    z-index: 1;
+    height: 160vh;
+  }
+  .contact-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    gap: 20px;
+    padding: 0 var(--gutter) 12vh;
+    text-align: center;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 1.4rem + 2.8vw, 4rem);
+    line-height: 1;
+  }
+  .actions {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 18px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: var(--fg);
+    cursor: pointer;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
+  }
+  .pill.primary,
+  .pill:hover,
+  .pill:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .pill .done,
+  .pill.is-copied .idle {
+    display: none;
+  }
+  .pill.is-copied .done {
+    display: inline;
+  }
+  .links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 22px;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+  }
+  .links a {
+    text-decoration: none;
+    color: var(--fg-dim);
+    border-bottom: 1px solid var(--line);
+    transition: color 0.3s var(--ease-out);
+  }
+  .links a:hover {
+    color: var(--fg);
+  }
+
+  .site-footer {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px 24px;
+    padding: 28px var(--gutter);
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-dim);
+    background: var(--bg);
+  }
+  .site-footer p {
+    margin: 0;
+  }
+  .site-footer a,
+  .link-btn {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  :global(:root[data-mode='recruiter']) .link-btn {
+    display: none;
+  }
+  .link-btn {
+    padding: 0;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+  }
+</style>

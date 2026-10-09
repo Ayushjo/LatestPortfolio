@@ -18,6 +18,28 @@ const activityEl = document.querySelector<HTMLElement>('#activity');
 if (activityEl) initCalendarReadout(activityEl);
 initDemos(() => experience, beats);
 
+for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(btn.dataset.copy!);
+      btn.classList.add('is-copied');
+      setTimeout(() => btn.classList.remove('is-copied'), 1800);
+    } catch {
+      location.href = `mailto:${btn.dataset.copy}`;
+    }
+  });
+}
+for (const btn of document.querySelectorAll<HTMLElement>('[data-set-mode]')) {
+  btn.addEventListener('click', () => setMode(btn.dataset.setMode as Mode));
+}
+const clock = document.querySelector<HTMLElement>('[data-local-time]');
+if (clock) {
+  const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+  const tickClock = () => (clock.textContent = fmt.format(new Date()));
+  tickClock();
+  setInterval(tickClock, 30_000);
+}
+
 // In-page jumps (fork choices) go through Lenis so they glide instead of teleporting.
 document.addEventListener('click', (e) => {
   const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-scroll-to]');
