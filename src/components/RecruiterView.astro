@@ -2,6 +2,7 @@
 import { profile } from '../content/profile';
 import { projects } from '../content/projects';
 import { experience } from '../content/experience';
+import github from '../data/github.json';
 
 const work = experience.filter((r) => r.kind === 'work');
 const education = experience.filter((r) => r.kind === 'education');
@@ -98,6 +99,28 @@ const education = experience.filter((r) => r.kind === 'education');
     )
   }
 
+  <section aria-labelledby="oss-h">
+    <h2 id="oss-h">Open source</h2>
+    {
+      github.prs.merged.map((p) => (
+        <div class="item">
+          <div class="item-head">
+            <h3>
+              <a href={p.url}>{p.repo}#{p.number}</a>
+            </h3>
+            <span class="when">
+              +{p.additions} −{p.deletions} · merged {p.mergedAt.slice(0, 10)}
+            </span>
+          </div>
+          <p>{p.title}</p>
+        </div>
+      ))
+    }
+    <p class="role-line">
+      {github.prs.open.length} more in review · {github.calendar.total.toLocaleString('en-US')} GitHub contributions in the last year
+    </p>
+  </section>
+
   <section aria-labelledby="skills-h">
     <h2 id="skills-h">Skills</h2>
     <dl class="skills">
@@ -153,7 +176,8 @@ const education = experience.filter((r) => r.kind === 'education');
     font-size: var(--step--1);
   }
   .contact a,
-  .proj-links a {
+  .proj-links a,
+  h3 a {
     text-decoration: none;
     border-bottom: 1px solid var(--line);
   }

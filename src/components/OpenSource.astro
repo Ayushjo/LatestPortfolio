@@ -1,0 +1,359 @@
+---
+import github from '../data/github.json';
+import { prStories } from '../content/oss';
+import Tone from './Tone.astro';
+
+const { merged, open } = github.prs;
+const spot = github.spotlight;
+const byId = new Map(merged.map((p) => [`${p.repo}#${p.number}`, p]));
+const fmt = (n: number) => n.toLocaleString('en-US');
+const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+const added = merged.reduce((s, p) => s + p.additions, 0);
+const removed = merged.reduce((s, p) => s + p.deletions, 0);
+const spotChanged = new Set(spot.changed).size;
+const stories = prStories.filter((s) => byId.has(s.id));
+const [prologue, ...fixes] = stories;
+const mergedPr = (id: string) => byId.get(id)!;
+const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
+---
+
+<section class="oss experience-only" id="open-source" aria-labelledby="oss-title">
+  <header class="oss-head">
+    <p class="eyebrow">Open source</p>
+    <h2 id="oss-title">{fmt(spot.files)} files. I changed {spotChanged}.</h2>
+    <p class="lede">
+      <Tone
+        text={{
+          immersive: 'On reading code I didn’t write — small, careful diffs in very large, very old codebases.',
+          casual: 'How I started contributing to software way older than my degree.',
+          recruiter: '',
+        }}
+      />
+    </p>
+  </header>
+
+  {
+    prologue && (
+      <article class="beat" data-beat={prologue.beat} data-side="right" data-label="First PR" data-group="Open source">
+        <div class="beat-sticky">
+          <div class="panel">
+            <p class="kicker">
+              {prologue.kicker} · {date(mergedPr(prologue.id).mergedAt)}
+            </p>
+            <h3>{prologue.title}</h3>
+            <p class="body">{prologue.body}</p>
+            <p class="diff">
+              <span class="add">+{mergedPr(prologue.id).additions}</span> <span class="del">−{mergedPr(prologue.id).deletions}</span>
+              <span class="files">{mergedPr(prologue.id).files.join(', ')}</span>
+            </p>
+            <a class="pill" href={mergedPr(prologue.id).url} target="_blank" rel="noopener">
+              {mergedPr(prologue.id).repo}#{mergedPr(prologue.id).number} <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    )
+  }
+
+  <article class="beat" data-beat="oss:galaxy" data-side="right" data-label="FreeCAD" data-group="Open source">
+    <div class="beat-sticky">
+      <div class="panel">
+        <p class="kicker">FreeCAD</p>
+        <h3>Then I opened FreeCAD.</h3>
+        <p class="body">
+          A parametric 3D CAD modeller, in development since 2002. Every dot here is one of its files, laid out by folder. The
+          bright {spotChanged} are the ones I’ve changed.
+        </p>
+        <ul class="stats">
+          <li><span class="value">{fmt(spot.files)}</span><span class="label">files</span></li>
+          <li><span class="value">{fmt(roundDown(spot.contributors, 100))}+</span><span class="label">contributors</span></li>
+          <li><span class="value">{Math.floor(spot.stars / 1000)}k</span><span class="label">stars</span></li>
+        </ul>
+      </div>
+    </div>
+  </article>
+
+  {
+    fixes.map((s, i) => {
+      const pr = mergedPr(s.id);
+      return (
+        <article class="beat" data-beat={s.beat} data-side={i % 2 === 0 ? 'left' : 'right'} data-label={`#${pr.number}`} data-group="Open source">
+          <div class:list={['beat-sticky', i % 2 === 0 && 'to-right']}>
+            <div class="panel">
+              <p class="kicker">
+                {s.kicker} · #{pr.number} · merged {date(pr.mergedAt)}
+              </p>
+              <h3>{s.title}</h3>
+              <p class="body">{s.body}</p>
+              <p class="diff">
+                <span class="add">+{pr.additions}</span> <span class="del">−{pr.deletions}</span>
+                <span class="files">{pr.files.join(', ')}</span>
+                {pr.reviewComments > 0 && <span class="files">{pr.reviewComments} review comments</span>}
+              </p>
+              <a class="pill" href={pr.url} target="_blank" rel="noopener">
+                View the PR <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+        </article>
+      );
+    })
+  }
+
+  <article class="beat coda" data-beat="oss:coda" data-side="center" data-label="In review" data-group="Open source">
+    <div class="beat-sticky centered">
+      <div class="panel">
+        <h3>Small diffs. Big codebases.</h3>
+        <p class="tally">
+          {merged.length} merged · <span class="add">+{added}</span> <span class="del">−{removed}</span> lines · {open.length} more in review
+        </p>
+        <ul class="open-list">
+          {
+            open.map((p) => (
+              <li>
+                <a href={p.url} target="_blank" rel="noopener">
+                  <span class="num">#{p.number}</span> {p.title}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </article>
+</section>
+
+<style>
+  .oss {
+    position: relative;
+    z-index: 1;
+  }
+  .oss-head {
+    min-height: 80vh;
+    display: grid;
+    align-content: end;
+    gap: 14px;
+    padding: 0 var(--gutter) 12vh;
+  }
+  .eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .oss-head h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.8rem, 1.2rem + 5.4vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .lede {
+    margin: 0;
+    max-width: 48ch;
+    font-size: var(--step-1);
+    line-height: 1.35;
+    color: var(--fg-dim);
+  }
+
+  .beat {
+    height: 140vh;
+  }
+  .beat-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--gutter);
+  }
+  .beat-sticky.to-right {
+    justify-content: flex-end;
+  }
+  .beat-sticky.centered {
+    justify-content: center;
+    align-items: flex-end;
+    padding-bottom: 8vh;
+    text-align: center;
+  }
+  .panel {
+    width: min(44vw, 540px);
+  }
+  .centered .panel {
+    width: min(90vw, 760px);
+  }
+  .panel > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.8s var(--ease-out),
+      transform 0.8s var(--ease-out);
+  }
+  .beat:global(.is-active) .panel > * {
+    opacity: 1;
+    transform: none;
+  }
+  .beat:global(.is-active) .panel > :nth-child(n + 2) { transition-delay: 0.08s; }
+  .beat:global(.is-active) .panel > :nth-child(n + 4) { transition-delay: 0.16s; }
+
+  .kicker {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 1.4rem + 3.6vw, 5.2rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .body {
+    margin: 18px 0 0;
+    max-width: 46ch;
+    font-size: 1.06rem;
+    line-height: 1.6;
+    color: var(--fg-dim);
+  }
+  .diff {
+    margin: 20px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+  .add {
+    color: var(--fg);
+  }
+  .del {
+    color: var(--fg-faint);
+  }
+  .files {
+    color: var(--fg-dim);
+    word-break: break-all;
+  }
+  .stats {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 16px 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+  }
+  .stats li {
+    display: grid;
+    gap: 6px;
+  }
+  .stats li + li {
+    padding-left: 16px;
+    border-left: 1px solid var(--line);
+  }
+  .stats .value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(2rem, 1.3rem + 1.6vw, 2.8rem);
+    line-height: 1;
+  }
+  .stats .label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .pill {
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 9px 16px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-decoration: none;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
+  }
+  .pill:hover,
+  .pill:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .tally {
+    margin: 14px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--fg-dim);
+  }
+  .open-list {
+    list-style: none;
+    margin: 20px auto 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 22px;
+    text-align: left;
+  }
+  .open-list a {
+    display: block;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.86rem;
+    text-decoration: none;
+    color: var(--fg-dim);
+    transition: color 0.3s var(--ease-out);
+  }
+  .open-list a:hover {
+    color: var(--fg);
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+
+  @media (max-aspect-ratio: 23/20) {
+    .beat-sticky,
+    .beat-sticky.to-right {
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding-bottom: 5vh;
+    }
+    .panel,
+    .centered .panel {
+      width: 100%;
+    }
+    .body {
+      font-size: 0.95rem;
+    }
+    .open-list {
+      grid-template-columns: 1fr;
+    }
+    .open-list li:nth-child(n + 5) {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel > * {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

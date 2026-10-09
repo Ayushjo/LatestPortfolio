@@ -1,6 +1,7 @@
 import type { Experience } from '../gl/Experience';
 import type { Quality } from '../gl/quality';
 import { getMode, hasStoredMode, onModeChange, prefersReducedMotion, setMode, type Mode } from './mode';
+import { initCalendarReadout } from './calendar';
 import { initRail } from './rail';
 import { readBeats, scrollToTarget, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
@@ -12,6 +13,8 @@ const beats = readBeats();
 const railEl = document.querySelector<HTMLElement>('[data-rail]');
 if (slider) initSlider(slider);
 let stopRail: (() => void) | null = null;
+const activityEl = document.querySelector<HTMLElement>('#activity');
+if (activityEl) initCalendarReadout(activityEl);
 
 // In-page jumps (fork choices) go through Lenis so they glide instead of teleporting.
 document.addEventListener('click', (e) => {

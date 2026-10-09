@@ -1,10 +1,12 @@
 import { DISPLAY, SERIF, textCanvas } from '../text/sampleText';
 import { inkCanvas } from './sample';
 import { EXPERIENCE_SHAPES } from './experience';
+import { GITHUB_SHAPES } from './github';
+import { OSS_SHAPES } from './oss';
 import { PROJECT_SHAPES } from './projects';
 import type { ShapeDef } from './draw';
 
-const DRAWN: Record<string, ShapeDef> = { ...PROJECT_SHAPES, ...EXPERIENCE_SHAPES };
+const DRAWN: Record<string, ShapeDef> = { ...PROJECT_SHAPES, ...EXPERIENCE_SHAPES, ...OSS_SHAPES, ...GITHUB_SHAPES };
 
 /**
  * Beat keys:

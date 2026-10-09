@@ -1,0 +1,153 @@
+---
+import github from '../data/github.json';
+import Tone from './Tone.astro';
+
+const cal = github.calendar;
+const fmt = (n: number) => n.toLocaleString('en-US');
+---
+
+<section class="activity experience-only" id="activity" data-beat="calendar" data-side="center" data-label="GitHub" data-group="Activity" aria-labelledby="act-title">
+  <div class="act-sticky">
+    <div class="readout" data-calendar-readout aria-hidden="true"></div>
+    <div class="act-copy">
+      <p class="eyebrow">Last 12 months on GitHub</p>
+      <h2 id="act-title">
+        <Tone
+          text={{
+            immersive: `${fmt(cal.total)} contributions, drawn one day at a time.`,
+            casual: `${fmt(cal.total)} contributions. I like shipping.`,
+            recruiter: 'GitHub activity',
+          }}
+        />
+      </h2>
+      <ul class="stats">
+        <li><span class="value">{fmt(cal.total)}</span><span class="label">contributions</span></li>
+        <li><span class="value">{cal.activeDays}</span><span class="label">active days</span></li>
+        <li><span class="value">{cal.longestStreak}</span><span class="label">day longest streak</span></li>
+        <li><span class="value">{cal.bestDay}</span><span class="label">on the best day</span></li>
+      </ul>
+      <a class="pill" href={`https://github.com/${github.user}`} target="_blank" rel="noopener">
+        github.com/{github.user} <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </div>
+  <script type="application/json" data-calendar-data set:html={JSON.stringify({ weeks: cal.weeks, start: cal.start })} />
+</section>
+
+<style>
+  .activity {
+    position: relative;
+    z-index: 1;
+    height: 150vh;
+  }
+  .act-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0 var(--gutter) 7vh;
+    text-align: center;
+  }
+  .readout {
+    position: absolute;
+    left: 0;
+    top: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 10px));
+    transition: opacity 0.2s var(--ease-out);
+  }
+  .readout:global(.is-on) {
+    opacity: 1;
+  }
+  .act-copy {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    max-width: 880px;
+  }
+  .eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 1.2rem + 3vw, 4.2rem);
+    line-height: 1;
+  }
+  .stats {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stats li {
+    display: grid;
+    gap: 4px;
+    padding: 0 22px;
+  }
+  .stats li + li {
+    border-left: 1px solid var(--line);
+  }
+  .stats .value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .stats .label {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .pill {
+    display: inline-flex;
+    gap: 6px;
+    padding: 9px 16px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-decoration: none;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
+  }
+  .pill:hover,
+  .pill:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  @media (max-aspect-ratio: 23/20) {
+    .stats li {
+      padding: 0 12px;
+    }
+    .stats .value {
+      font-size: 1.8rem;
+    }
+    .stats li:nth-child(4) {
+      display: none;
+    }
+  }
+</style>
