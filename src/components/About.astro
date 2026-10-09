@@ -1,0 +1,144 @@
+---
+import Tone from './Tone.astro';
+import { experience } from '../content/experience';
+import { profile } from '../content/profile';
+
+const now = experience.find((r) => r.kind === 'work');
+const school = experience.find((r) => r.kind === 'education');
+const facts = [
+  now && { k: 'Now', v: `${now.title} at ${now.company}` },
+  school && { k: 'Studying', v: `${school.title}, ${school.company}` },
+  school?.product && { k: 'Also', v: school.product },
+  { k: 'Based in', v: `${profile.location} · IST` },
+].filter(Boolean) as { k: string; v: string }[];
+---
+
+<section class="about experience-only" id="about" data-beat="image:/portrait/ayush-matte.png" data-side="right" data-label="About" data-group="About" aria-labelledby="about-title">
+  <div class="about-sticky">
+    <div class="panel">
+      <p class="eyebrow">About</p>
+      <h2 id="about-title">Hi, I’m Ayush.</h2>
+      <Tone
+        as="p"
+        class="bio"
+        text={{
+          immersive:
+            'I’m a backend and systems engineer, studying electronics at IIIT Naya Raipur. I like the parts of software nobody sees — storage engines, proxies, queues, agents — and making them fast enough that nobody has to think about them.',
+          casual: 'Engineering student by day, Rust benchmarker by night. I like making slow things fast, and fast things beautiful.',
+          recruiter:
+            'Backend and systems engineer studying electronics at IIIT Naya Raipur, working on storage engines, proxies, queues and AI agents.',
+        }}
+      />
+      <dl class="facts">
+        {
+          facts.map((f) => (
+            <div>
+              <dt>{f.k}</dt>
+              <dd>{f.v}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</section>
+
+<style>
+  .about {
+    position: relative;
+    z-index: 1;
+    height: 150vh;
+  }
+  .about-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--gutter);
+  }
+  .panel {
+    width: min(44vw, 540px);
+  }
+  .panel > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.9s var(--ease-out),
+      transform 0.9s var(--ease-out);
+  }
+  .about:global(.is-active) .panel > * {
+    opacity: 1;
+    transform: none;
+  }
+  .about:global(.is-active) .panel > :nth-child(n + 3) {
+    transition-delay: 0.12s;
+  }
+  .eyebrow {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3rem, 1.6rem + 4.4vw, 6.4rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+  .panel :global(.bio) {
+    margin: 20px 0 0;
+    max-width: 44ch;
+    font-size: var(--step-1);
+    line-height: 1.45;
+    color: var(--fg-dim);
+  }
+  .facts {
+    margin: 26px 0 0;
+    border-top: 1px solid var(--line);
+  }
+  .facts div {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  dt {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    padding-top: 3px;
+  }
+  dd {
+    margin: 0;
+    color: var(--fg);
+  }
+  @media (max-aspect-ratio: 23/20) {
+    .about-sticky {
+      align-items: flex-end;
+      padding-bottom: 6vh;
+    }
+    .panel {
+      width: 100%;
+    }
+    .panel :global(.bio) {
+      font-size: 1rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel > * {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

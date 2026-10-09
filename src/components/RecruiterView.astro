@@ -38,6 +38,7 @@ const glance = [
 
   <header class="card head">
     <div class="who">
+      <img class="avatar" src="/portrait/ayush-avatar.png" alt={`Portrait of ${profile.name}`} width="96" height="96" />
       <p class="status"><span class="dot" aria-hidden="true"></span> Open to opportunities</p>
       <h1 id="resume-name">{profile.name}</h1>
       <p class="role">Backend & systems engineer — TypeScript, Node.js, Rust, Python</p>
@@ -241,6 +242,14 @@ const glance = [
     grid-template-columns: 1fr auto;
     gap: 22px 40px;
     padding: 36px;
+  }
+  .avatar {
+    display: block;
+    width: 96px;
+    height: 96px;
+    margin: 0 0 18px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--line), 0 0 0 6px var(--bg);
   }
   .status {
     display: inline-flex;
