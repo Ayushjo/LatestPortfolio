@@ -13,16 +13,20 @@ const DRAWN: Record<string, ShapeDef> = { ...PROJECT_SHAPES, ...EXPERIENCE_SHAPE
  *   <slug> | exp:<id> | fork …   a drawn shape
  *   text:<line|line>              heavy display text
  *   serif:<line|line>             Instrument Serif italic text
- *   image:<url>                   a greyscale image; brighter pixels pull in more particles
+ *   image:<url>[|<tall url>]      a greyscale image; brighter pixels pull in more particles.
+ *                                 The optional second image is used when the layout stacks (tall screens).
  *   stream                        no shape: particles flow free
  */
 export const isStream = (key: string) => key === 'stream';
 
-export async function shapeCanvas(key: string): Promise<HTMLCanvasElement | null> {
+export async function shapeCanvas(key: string, wide = true): Promise<HTMLCanvasElement | null> {
   if (isStream(key)) return null;
   if (key.startsWith('text:')) return textCanvas(key.slice(5).split('|'), DISPLAY);
   if (key.startsWith('serif:')) return textCanvas(key.slice(6).split('|'), SERIF);
-  if (key.startsWith('image:')) return imageCanvas(key.slice(6));
+  if (key.startsWith('image:')) {
+    const [wideUrl, tallUrl] = key.slice(6).split('|');
+    return imageCanvas(!wide && tallUrl ? tallUrl : wideUrl!);
+  }
   const def = DRAWN[key];
   if (!def) return null;
   const { canvas, ctx } = inkCanvas(def.width, def.height);

@@ -13,7 +13,7 @@ const facts = [
 ].filter(Boolean) as { k: string; v: string }[];
 ---
 
-<section class="about experience-only" id="about" data-beat="image:/portrait/ayush-matte.png" data-side="right" data-label="About" data-group="About" aria-labelledby="about-title">
+<section class="about experience-only" id="about" data-beat="image:/portrait/ayush-seated-matte.png|/portrait/ayush-bust-matte.png" data-side="right" data-label="About" data-group="About" aria-labelledby="about-title">
   <div class="about-sticky">
     <div class="panel">
       <p class="eyebrow">About</p>
@@ -43,23 +43,6 @@ const facts = [
   </div>
 </section>
 
-<section class="about about-more experience-only" data-beat="image:/portrait/ayush-seated-matte.png" data-side="left" data-label="Off the keyboard" data-group="About" aria-labelledby="about-more-title">
-  <div class="about-sticky to-right">
-    <div class="panel">
-      <p class="eyebrow">Off the keyboard</p>
-      <h2 id="about-more-title">Same person, fewer terminals.</h2>
-      <Tone
-        as="p"
-        class="bio"
-        text={{
-          immersive: 'When I’m not benchmarking something, I’m probably with family — though, as you can see, the phone is never far away.',
-          casual: 'Yes, the phone is always in hand. No, it isn’t running a benchmark. (Probably.)',
-          recruiter: '',
-        }}
-      />
-    </div>
-  </div>
-</section>
 
 <style>
   .about {
@@ -75,12 +58,6 @@ const facts = [
     display: flex;
     align-items: center;
     padding: 0 var(--gutter);
-  }
-  .to-right {
-    justify-content: flex-end;
-  }
-  .about-more h2 {
-    font-size: clamp(2.6rem, 1.4rem + 3.6vw, 5.2rem);
   }
   .panel {
     width: min(44vw, 540px);
@@ -147,9 +124,7 @@ const facts = [
     color: var(--fg);
   }
   @media (max-aspect-ratio: 23/20) {
-    .about-sticky,
-    .about-sticky.to-right {
-      justify-content: flex-start;
+    .about-sticky {
       align-items: flex-end;
       padding-bottom: 6vh;
     }

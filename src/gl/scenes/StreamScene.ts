@@ -219,7 +219,7 @@ export class StreamScene implements Scene {
     this.building.add(k);
     const view = this.view;
     try {
-      const canvas = await shapeCanvas(spec.key);
+      const canvas = await shapeCanvas(spec.key, view.halfW / view.halfH > 1.15);
       if (view !== this.view) return;
       this.clouds.set(k, canvas ? sampleInk(canvas, this.quality.count, this.placement(spec.side, view)) : null);
       while (this.clouds.size > CACHE_LIMIT) this.clouds.delete(this.clouds.keys().next().value!);

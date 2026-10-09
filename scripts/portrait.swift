@@ -1,8 +1,6 @@
 // Turns a photo into the portrait assets the site uses:
-//   public/portrait/ayush-matte.png      768² luminance of the person on black (particle shape source)
-//   public/portrait/ayush-halftone.png   512² silver halftone, circle-cropped (avatar)
-//   public/portrait/ayush-avatar.png     256² smooth silver-toned avatar
-//   public/favicon-64.png, public/apple-touch-icon.png
+//   default:  public/portrait/ayush-avatar.png (256²), public/favicon-64.png, public/apple-touch-icon.png
+//   [name]:   public/portrait/<name>-matte.png, 768² luminance of the person on black (a particle shape source)
 // The background is removed on-device with Vision person segmentation, so the wall never becomes particles.
 // Run: swift scripts/portrait.swift <photo.jpg> <cropX> <cropY> <cropSize> [name]   (crop in image pixels, top-left origin)
 // With [name], only public/portrait/<name>-matte.png is written (no vignette, icons untouched): extra particle images.
@@ -57,44 +55,10 @@ if let name = extraName {
   print("wrote public/portrait/\(name)-matte.png")
   exit(0)
 }
-write(subject, size: 768, to: "public/portrait/ayush-matte.png")
-
-// 3. Silver halftone avatar: dot area follows luminance, on the site's near-black, circle-cropped.
-func halftone(size: Int, cell: CGFloat) -> CGImage {
-  let src = ci.createCGImage(
-    subject.cropped(to: cropRect)
-      .transformed(by: CGAffineTransform(translationX: -cropRect.minX, y: -cropRect.minY))
-      .transformed(by: CGAffineTransform(scaleX: CGFloat(size) / cs, y: CGFloat(size) / cs)),
-    from: CGRect(x: 0, y: 0, width: size, height: size))!
-  let rep = NSBitmapImageRep(cgImage: src)
-  let ctx = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
-                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-  ctx.addEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
-  ctx.clip()
-  ctx.setFillColor(red: 0.02, green: 0.02, blue: 0.024, alpha: 1)
-  ctx.fill(CGRect(x: 0, y: 0, width: size, height: size))
-  ctx.setFillColor(red: 0.9, green: 0.92, blue: 0.96, alpha: 1)
-  var y: CGFloat = cell / 2
-  var row = 0
-  while y < CGFloat(size) {
-    var x: CGFloat = cell / 2 + (row % 2 == 0 ? 0 : cell / 2)
-    while x < CGFloat(size) {
-      let lum = rep.colorAt(x: Int(x), y: size - 1 - Int(y))?.brightnessComponent ?? 0
-      let t = 0.9 * pow(max(0, min(1, (lum - 0.03) / 0.95)), 1.05)
-      let r = cell * 0.6 * sqrt(t)
-      if r > 0.25 { ctx.fillEllipse(in: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)) }
-      x += cell
-    }
-    y += cell * 0.866
-    row += 1
-  }
-  return ctx.makeImage()!
-}
 
 func save(_ cg: CGImage, _ path: String) {
   try! NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: path))
 }
-save(halftone(size: 512, cell: 4.6), "public/portrait/ayush-halftone.png")
 
 /// Small icons: halftone turns to mush at tab size, so use the smooth silver-toned matte in a circle.
 func icon(size: Int) -> CGImage {
