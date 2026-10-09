@@ -1,0 +1,5 @@
+{ "captions": [
+    { "from": 0,   "to": 2.2, "text": "Tell it what went wrong — in plain Hinglish." },
+    { "from": 2.2, "to": 10,  "text": "Its agent factory drafts a specialist; one 'haan' hires it." },
+    { "from": 10,  "to": 13,  "text": "All 28 end-to-end workflows passed on the live AWS deployment." }
+] }

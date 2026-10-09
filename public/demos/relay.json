@@ -1,0 +1,5 @@
+{ "captions": [
+    { "from": 0,   "to": 2.2,  "text": "Relay is an async reverse proxy written in Rust." },
+    { "from": 2.2, "to": 9,    "text": "oha hammers it live: 100 connections, every response a 200." },
+    { "from": 9,   "to": 12.2, "text": "Peak throughput in its README benchmarks: about 70k req/s." }
+] }
