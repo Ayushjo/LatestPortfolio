@@ -14,6 +14,7 @@ export function createUniforms() {
     morph: uniform(0), // 0 AYUSH → 1 SYSTEMS ENGINEER
     scroll: uniform(0), // hero scroll progress
     workIn: uniform(0), // 0 disc → 1 project shapes
+    beatIn: uniform(0), // 0 hero/disc → 1 beats section (stream beats flow free instead of orbiting)
     vortex: uniform(new Vector2(0, 0.9)),
 
     // stream

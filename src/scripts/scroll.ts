@@ -7,17 +7,39 @@ gsap.registerPlugin(ScrollTrigger);
 export interface ScrollProgress {
   /** 0 → 1 across the hero. */
   hero: number;
-  /** 0 → 1 as the first project chapter rises into view. */
-  workIn: number;
-  /** Fractional chapter index: 2.5 = halfway through the third chapter. */
-  chapter: number;
+  /** 0 → 1 as the first beat rises into view (the disc releases into shapes). */
+  beatIn: number;
+  /** Fractional beat index: 2.5 = halfway from beat 2's top to beat 3's top. */
+  beat: number;
 }
 
-export const progress: ScrollProgress = { hero: 0, workIn: 0, chapter: 0 };
+export type ShapeSide = 'left' | 'right' | 'center';
+
+/** A scroll position the particle field forms a shape at. Declared in markup with data-beat. */
+export interface Beat {
+  key: string;
+  side: ShapeSide;
+  label: string;
+  group: string;
+  el: HTMLElement;
+}
+
+export const progress: ScrollProgress = { hero: 0, beatIn: 0, beat: 0 };
 
 let lenis: Lenis | null = null;
 let triggers: ScrollTrigger[] = [];
+let beatTops: number[] = [];
 const raf = (time: number) => lenis?.raf(time * 1000);
+
+export function readBeats(root: ParentNode = document): Beat[] {
+  return [...root.querySelectorAll<HTMLElement>('[data-beat]')].map((el) => ({
+    key: el.dataset.beat!,
+    side: (el.dataset.side as ShapeSide) || 'right',
+    label: el.dataset.label || el.dataset.beat!,
+    group: el.dataset.group || '',
+    el,
+  }));
+}
 
 export function startSmoothScroll(): void {
   if (lenis) return;
@@ -34,9 +56,34 @@ export function stopSmoothScroll(): void {
   lenis = null;
 }
 
-export function trackScroll(els: { hero: HTMLElement | null; chapters: HTMLElement | null }): void {
+/** Smooth-scroll to a page offset or element, via Lenis when it is running. */
+export function scrollToTarget(target: number | HTMLElement): void {
+  if (lenis) lenis.scrollTo(target, { duration: 1.6 });
+  else {
+    const y = typeof target === 'number' ? target : target.getBoundingClientRect().top + scrollY;
+    window.scrollTo({ top: y, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+}
+
+const absTop = (el: HTMLElement) => el.getBoundingClientRect().top + scrollY;
+
+function measureBeats(beats: Beat[]) {
+  beatTops = beats.map((b) => absTop(b.el));
+}
+
+function updateBeat() {
+  const n = beatTops.length;
+  if (n === 0) return;
+  const y = scrollY;
+  progress.beatIn = Math.min(1, Math.max(0, (y - (beatTops[0]! - innerHeight)) / innerHeight));
+  let i = 0;
+  while (i < n - 1 && y >= beatTops[i + 1]!) i++;
+  const span = i < n - 1 ? beatTops[i + 1]! - beatTops[i]! : innerHeight;
+  progress.beat = i + Math.min(0.999, Math.max(0, (y - beatTops[i]!) / span));
+}
+
+export function trackScroll(hero: HTMLElement | null, beats: Beat[]): void {
   untrackScroll();
-  const { hero, chapters } = els;
   if (hero) {
     triggers.push(
       ScrollTrigger.create({
@@ -47,36 +94,41 @@ export function trackScroll(els: { hero: HTMLElement | null; chapters: HTMLEleme
       }),
     );
   }
-  if (chapters) {
-    const items = [...chapters.querySelectorAll<HTMLElement>('[data-chapter]')];
+  if (beats.length) {
     triggers.push(
       ScrollTrigger.create({
-        trigger: chapters,
-        start: 'top bottom',
-        end: 'top top',
-        onUpdate: (s) => (progress.workIn = s.progress),
-      }),
-      ScrollTrigger.create({
-        trigger: chapters,
-        start: 'top top',
-        end: 'bottom bottom',
-        onUpdate: (s) => {
-          const per = items[0]?.offsetHeight || innerHeight;
-          progress.chapter = Math.min(items.length - 1e-3, (s.progress * (s.end - s.start)) / per);
+        start: 0,
+        end: 'max',
+        onUpdate: updateBeat,
+        onRefresh: () => {
+          measureBeats(beats);
+          updateBeat();
         },
       }),
-      ...items.map((item) =>
-        ScrollTrigger.create({ trigger: item, start: 'top 55%', end: 'bottom 45%', toggleClass: 'is-active' }),
-      ),
+      ...beats.map((b) => ScrollTrigger.create({ trigger: b.el, start: 'top 55%', end: 'bottom 45%', toggleClass: 'is-active' })),
     );
   }
   ScrollTrigger.refresh();
+
+  if (import.meta.env.DEV) {
+    // Hidden preview panes throttle ScrollTrigger's ticker; tests call this after scrolling.
+    Object.assign(window, {
+      __syncScroll: () => {
+        if (hero) progress.hero = Math.min(1, Math.max(0, (scrollY - absTop(hero)) / hero.offsetHeight));
+        measureBeats(beats);
+        updateBeat();
+        return { ...progress };
+      },
+      __beats: beats,
+    });
+  }
 }
 
 export function untrackScroll(): void {
   triggers.forEach((t) => t.kill());
   triggers = [];
+  beatTops = [];
   progress.hero = 0;
-  progress.workIn = 0;
-  progress.chapter = 0;
+  progress.beatIn = 0;
+  progress.beat = 0;
 }

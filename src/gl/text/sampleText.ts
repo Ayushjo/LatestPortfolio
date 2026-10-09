@@ -1,31 +1,47 @@
 import { inkCanvas, sampleInk, type PointCloud } from '../shapes/sample';
 
-export interface TextLayout {
-  lines: string[];
-  /** Width of the widest line in world units. */
-  worldWidth: number;
-  centerY: number;
-  font?: string;
-  weight?: number;
-  letterSpacingEm?: number;
-  lineHeightEm?: number;
+export interface TextStyle {
+  family: string;
+  weight: number;
+  italic: boolean;
+  uppercase: boolean;
+  letterSpacingEm: number;
+  lineHeightEm: number;
 }
+
+export const DISPLAY: TextStyle = {
+  family: 'Inter Tight',
+  weight: 900,
+  italic: false,
+  uppercase: true,
+  letterSpacingEm: -0.04,
+  lineHeightEm: 0.92,
+};
+
+export const SERIF: TextStyle = {
+  family: 'Instrument Serif',
+  weight: 400,
+  italic: true,
+  uppercase: false,
+  letterSpacingEm: -0.01,
+  lineHeightEm: 1.05,
+};
 
 const CANVAS_W = 1600;
 const PAD = 24;
 
-/** Rasterises text with the page's real font and scatters `count` particle targets over it. */
-export async function sampleText(layout: TextLayout, count: number): Promise<PointCloud> {
-  const { worldWidth, centerY, font = 'Inter Tight', weight = 900, letterSpacingEm = -0.04, lineHeightEm = 0.92 } = layout;
-  const lines = layout.lines.map((l) => l.toUpperCase());
+/** Text drawn with the page's real font, filling the canvas width; ready for `sampleInk`. */
+export async function textCanvas(rawLines: string[], style: TextStyle = DISPLAY): Promise<HTMLCanvasElement> {
+  const { family, weight, italic, uppercase, letterSpacingEm, lineHeightEm } = style;
+  const lines = uppercase ? rawLines.map((l) => l.toUpperCase()) : rawLines;
+  const fontAt = (px: number) => `${italic ? 'italic ' : ''}${weight} ${px}px "${family}", system-ui, sans-serif`;
 
   try {
-    await document.fonts.load(`${weight} 100px "${font}"`);
+    await document.fonts.load(fontAt(100));
   } catch {
     /* fall back to whatever font is available */
   }
 
-  const fontAt = (px: number) => `${weight} ${px}px "${font}", system-ui, sans-serif`;
   const measure = inkCanvas(1, 1).ctx;
   measure.font = fontAt(100);
   measure.letterSpacing = `${letterSpacingEm * 100}px`;
@@ -40,7 +56,20 @@ export async function sampleText(layout: TextLayout, count: number): Promise<Poi
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   lines.forEach((line, i) => ctx.fillText(line, CANVAS_W / 2, PAD + lineH * (i + 0.5) + fontPx * 0.04));
+  return canvas;
+}
 
-  const fullWidth = worldWidth * (CANVAS_W / (CANVAS_W - PAD * 2));
-  return sampleInk(canvas, count, { centerX: 0, centerY, maxWidth: fullWidth, maxHeight: Infinity });
+export interface TextLayout {
+  lines: string[];
+  /** Width of the widest line in world units. */
+  worldWidth: number;
+  centerY: number;
+  style?: TextStyle;
+}
+
+/** Hero words: text centred horizontally at a given width. */
+export async function sampleText(layout: TextLayout, count: number): Promise<PointCloud> {
+  const canvas = await textCanvas(layout.lines, layout.style);
+  const fullWidth = layout.worldWidth * (CANVAS_W / (CANVAS_W - PAD * 2));
+  return sampleInk(canvas, count, { centerX: 0, centerY: layout.centerY, maxWidth: fullWidth, maxHeight: Infinity });
 }

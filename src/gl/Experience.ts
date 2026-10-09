@@ -5,7 +5,7 @@ import { Input } from './input';
 import { createPipeline, type Pipeline } from './post/pipeline';
 import type { Quality } from './quality';
 import { createRenderer } from './renderer';
-import { StreamScene, type StreamHooks } from './scenes/StreamScene';
+import { StreamScene, type BeatSpec, type StreamHooks } from './scenes/StreamScene';
 import type { View } from './scenes/Scene';
 
 export interface ExperienceHooks extends StreamHooks {
@@ -36,19 +36,19 @@ export class Experience {
     readonly quality: Quality,
     private hooks: ExperienceHooks,
     calm: boolean,
-    chapters: string[],
+    beats: BeatSpec[],
   ) {
-    this.stream = new StreamScene(renderer, quality, this.input, chapters, hooks, calm);
+    this.stream = new StreamScene(renderer, quality, this.input, beats, hooks, calm);
     this.post = createPipeline(renderer, this.stream.root, this.camera, quality, this.stream.u.time);
   }
 
   static async boot(
     canvas: HTMLCanvasElement,
     q: Quality,
-    opts: { hooks?: ExperienceHooks; calm?: boolean; chapters?: string[] } = {},
+    opts: { hooks?: ExperienceHooks; calm?: boolean; beats?: BeatSpec[] } = {},
   ): Promise<Experience> {
     const renderer = await createRenderer(canvas, q);
-    const exp = new Experience(renderer, q, opts.hooks ?? {}, opts.calm ?? false, opts.chapters ?? []);
+    const exp = new Experience(renderer, q, opts.hooks ?? {}, opts.calm ?? false, opts.beats ?? []);
     const view = currentView();
     exp.applyCamera(view);
     await exp.stream.init(view);

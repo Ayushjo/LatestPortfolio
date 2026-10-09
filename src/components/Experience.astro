@@ -1,0 +1,302 @@
+---
+import Tone from './Tone.astro';
+import { experience } from '../content/experience';
+
+/** Stable 7-char hex "commit hash" per entry, so the log reads like real git output. */
+const hash = (s: string) => {
+  let h = 2166136261;
+  for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  return (h >>> 0).toString(16).padStart(8, '0').slice(0, 7);
+};
+---
+
+<section class="experience experience-only" id="experience" aria-labelledby="exp-title">
+  <header class="exp-head">
+    <p class="cmd" aria-hidden="true">$ git log --graph --oneline career</p>
+    <h2 id="exp-title">
+      <Tone text={{ immersive: 'Where I’ve shipped.', casual: 'Places I’ve worked.', recruiter: 'Experience' }} />
+    </h2>
+  </header>
+
+  <ol class="log">
+    {
+      experience.map((r, i) => (
+        <li
+          class="entry"
+          data-beat={`exp:${r.id}`}
+          data-side="right"
+          data-label={r.company}
+          data-group="Experience"
+          aria-labelledby={`exp-${r.id}`}
+        >
+          <div class="entry-sticky">
+            <div class="entry-panel">
+              <p class="commit">
+                <span class="hash">{hash(r.id)}</span>
+                {i === 0 && <span class="head">(HEAD)</span>}
+                <span class="msg">{r.commit}</span>
+              </p>
+              <h3 id={`exp-${r.id}`} class="company">
+                {r.company}
+              </h3>
+              <p class="title">
+                {r.title} <span aria-hidden="true">·</span> {r.period}
+              </p>
+              {r.product && <p class="product">{r.product}</p>}
+              <p class="summary">{r.summary}</p>
+              {r.points.length > 0 && (
+                <ul class="points">
+                  {r.points.map((pt) => (
+                    <li>{pt}</li>
+                  ))}
+                </ul>
+              )}
+              {r.stats && (
+                <ul class="stats">
+                  {r.stats.map((s) => (
+                    <li>
+                      <span class="value">{s.value}</span>
+                      <span class="label">{s.label}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {r.links && (
+                <p class="actions">
+                  {r.links.map((l) => (
+                    <a class="pill" href={l.href} target="_blank" rel="noopener">
+                      {l.label} <span aria-hidden="true">↗</span>
+                    </a>
+                  ))}
+                </p>
+              )}
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<style>
+  .experience {
+    position: relative;
+    z-index: 1;
+  }
+  .exp-head {
+    min-height: 70vh;
+    display: grid;
+    align-content: end;
+    gap: 12px;
+    padding: 0 var(--gutter) 10vh;
+  }
+  .cmd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--fg-dim);
+  }
+  .exp-head h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 1.4rem + 4vw, 5.4rem);
+    line-height: 1;
+  }
+
+  .log {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .entry {
+    height: 130vh;
+  }
+  .entry-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--gutter);
+  }
+  .entry-panel {
+    position: relative;
+    width: min(46vw, 580px);
+    padding-left: 34px;
+  }
+  /* The git graph: a branch line with a commit dot at this entry. */
+  .entry-panel::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: -40vh;
+    bottom: -40vh;
+    width: 1px;
+    background: linear-gradient(transparent, var(--line) 20%, var(--line) 80%, transparent);
+  }
+  .entry-panel::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--fg);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--fg) 15%, transparent);
+  }
+
+  .entry-panel > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.8s var(--ease-out),
+      transform 0.8s var(--ease-out);
+  }
+  .entry:global(.is-active) .entry-panel > * {
+    opacity: 1;
+    transform: none;
+  }
+  .entry:global(.is-active) .entry-panel > :nth-child(n + 3) { transition-delay: 0.08s; }
+  .entry:global(.is-active) .entry-panel > :nth-child(n + 5) { transition-delay: 0.16s; }
+
+  .commit {
+    margin: 0 0 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+  .hash {
+    color: var(--fg-faint);
+  }
+  .head {
+    color: var(--fg);
+  }
+  .msg {
+    color: var(--fg-dim);
+  }
+  .company {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3rem, 1.6rem + 4vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+  .title {
+    margin: 14px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+  .product {
+    margin: 6px 0 0;
+    color: var(--fg-dim);
+  }
+  .summary {
+    margin: 16px 0 0;
+    max-width: 40ch;
+    font-size: var(--step-1);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .points {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    max-width: 54ch;
+  }
+  .points li {
+    position: relative;
+    padding-left: 18px;
+    font-size: 0.96rem;
+    line-height: 1.55;
+    color: var(--fg-dim);
+  }
+  .points li::before {
+    content: '+';
+    position: absolute;
+    left: 0;
+    font-family: var(--font-mono);
+    color: var(--fg-faint);
+  }
+  .stats {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 14px 0 0;
+    display: flex;
+    gap: 28px;
+    border-top: 1px solid var(--line);
+  }
+  .stats li {
+    display: grid;
+    gap: 4px;
+  }
+  .stats .value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .stats .label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .actions {
+    margin: 18px 0 0;
+  }
+  .pill {
+    display: inline-flex;
+    gap: 6px;
+    padding: 8px 15px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    text-decoration: none;
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
+  }
+  .pill:hover,
+  .pill:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  @media (max-aspect-ratio: 23/20) {
+    .entry-sticky {
+      align-items: flex-end;
+      padding-bottom: 5vh;
+    }
+    .entry-panel {
+      width: 100%;
+    }
+    .points li:nth-child(n + 3) {
+      display: none;
+    }
+    .summary {
+      font-size: 1.05rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-panel > * {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

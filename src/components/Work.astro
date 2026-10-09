@@ -1,9 +1,9 @@
 ---
 import Tone from './Tone.astro';
-import { projects } from '../content/projects';
+import { featured } from '../content/projects';
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const total = pad(projects.length);
+const total = pad(featured.length);
 ---
 
 <section class="work experience-only" id="work" aria-labelledby="work-title">
@@ -23,44 +23,56 @@ const total = pad(projects.length);
     </div>
   </header>
 
-  <div class="chapters" data-chapters>
-    {
-      projects.map((p, i) => (
-        <article class:list={['chapter', i % 2 === 0 ? 'text-left' : 'text-right']} data-chapter={p.slug} aria-labelledby={`p-${p.slug}`}>
-          <div class="chapter-sticky">
-            <div class="panel">
-              <p class="index">
-                {pad(i + 1)} <span>/ {total}</span>
+  {
+    featured.map((p, i) => (
+      <article
+        class:list={['chapter', i % 2 === 0 ? 'text-left' : 'text-right']}
+        data-beat={p.slug}
+        data-side={i % 2 === 0 ? 'right' : 'left'}
+        data-label={p.name}
+        data-group="Work"
+        aria-labelledby={`p-${p.slug}`}
+      >
+        <div class="chapter-sticky">
+          <div class="panel">
+            <p class="index" aria-hidden="true">
+              <span>{pad(i + 1)}</span>
+              <span class="rule" />
+              <span class="total">{total}</span>
+            </p>
+            {p.role && <p class="role">{p.role}</p>}
+            <h3 id={`p-${p.slug}`} class="name">
+              {p.name}
+            </h3>
+            <p class="tagline">{p.tagline}</p>
+            <p class="summary">{p.summary}</p>
+            <ul class="stats">
+              {p.stats.map((s) => (
+                <li>
+                  <span class="value">{s.value}</span>
+                  <span class="label">{s.label}</span>
+                </li>
+              ))}
+            </ul>
+            <ul class="stack" aria-label="Built with">
+              {p.tags.map((t) => (
+                <li>{t}</li>
+              ))}
+            </ul>
+            {p.links.length > 0 && (
+              <p class="actions">
+                {p.links.map((l) => (
+                  <a class="pill" href={l.href} target="_blank" rel="noopener">
+                    {l.label} <span aria-hidden="true">↗</span>
+                  </a>
+                ))}
               </p>
-              <h3 id={`p-${p.slug}`}>{p.name}</h3>
-              <p class="tagline">{p.tagline}</p>
-              {p.role && <p class="role">{p.role}</p>}
-              <p class="summary">{p.summary}</p>
-              <ul class="metrics">
-                {p.metrics.map((m) => (
-                  <li>{m}</li>
-                ))}
-              </ul>
-              <ul class="tags" aria-label="Built with">
-                {p.tags.map((t) => (
-                  <li>{t}</li>
-                ))}
-              </ul>
-              {p.links.length > 0 && (
-                <p class="links">
-                  {p.links.map((l) => (
-                    <a href={l.href} target="_blank" rel="noopener">
-                      {l.label} <span aria-hidden="true">↗</span>
-                    </a>
-                  ))}
-                </p>
-              )}
-            </div>
+            )}
           </div>
-        </article>
-      ))
-    }
-  </div>
+        </div>
+      </article>
+    ))
+  }
 </section>
 
 <style>
@@ -103,7 +115,7 @@ const total = pad(projects.length);
   }
 
   .chapter {
-    height: 160vh;
+    height: 140vh;
   }
   .chapter-sticky {
     position: sticky;
@@ -119,7 +131,7 @@ const total = pad(projects.length);
   }
 
   .panel {
-    width: min(44vw, 540px);
+    width: min(44vw, 560px);
   }
   .panel > * {
     opacity: 0;
@@ -143,89 +155,136 @@ const total = pad(projects.length);
   .chapter:global(.is-active) .panel > :nth-child(n + 7) { transition-delay: 0.3s; }
 
   .index {
-    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
     font-family: var(--font-mono);
-    font-size: var(--step--1);
-    letter-spacing: 0.1em;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
     color: var(--fg);
   }
-  .index span {
+  .index .rule {
+    flex: 0 0 64px;
+    height: 1px;
+    background: var(--line);
+  }
+  .index .total {
     color: var(--fg-faint);
-  }
-  h3 {
-    margin: 0;
-    font-size: clamp(2.6rem, 1.4rem + 4.2vw, 5.6rem);
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    line-height: 0.92;
-  }
-  .tagline {
-    margin: 12px 0 0;
-    font-family: var(--font-serif);
-    font-style: italic;
-    font-size: var(--step-1);
-    line-height: 1.2;
-    color: var(--fg);
   }
   .role {
-    margin: 14px 0 0;
+    margin: 0 0 6px;
     font-family: var(--font-mono);
-    font-size: var(--step--1);
-    color: var(--fg);
-  }
-  .role::before {
-    content: '◆ ';
-    color: var(--fg-faint);
-  }
-  .summary {
-    margin: 16px 0 0;
-    max-width: 46ch;
-    font-size: var(--step-0);
-    line-height: 1.55;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--fg-dim);
   }
-  .metrics {
-    list-style: none;
-    margin: 20px 0 0;
-    padding: 0;
-    border-top: 1px solid var(--line);
-  }
-  .metrics li {
-    padding: 9px 0;
-    border-bottom: 1px solid var(--line);
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
+  .name {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3.4rem, 1.6rem + 5vw, 7.5rem);
+    letter-spacing: -0.02em;
+    line-height: 0.9;
     color: var(--fg);
   }
-  .tags {
+  .tagline {
+    margin: 14px 0 0;
+    max-width: 34ch;
+    font-size: var(--step-1);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .summary {
+    margin: 14px 0 0;
+    max-width: 50ch;
+    font-size: 1.02rem;
+    line-height: 1.6;
+    color: var(--fg-dim);
+  }
+
+  .stats {
     list-style: none;
-    margin: 16px 0 0;
+    margin: 26px 0 0;
+    padding: 18px 0 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+  }
+  .stats li {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    padding-right: 16px;
+  }
+  .stats li + li {
+    padding-left: 16px;
+    border-left: 1px solid var(--line);
+  }
+  .stats .value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(2rem, 1.3rem + 1.6vw, 2.9rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .stats .label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.45;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+
+  .stack {
+    list-style: none;
+    margin: 22px 0 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 14px;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--fg-faint);
+    gap: 6px;
   }
-  .links {
-    margin: 18px 0 0;
+  .stack li {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    color: var(--fg-dim);
+  }
+
+  .actions {
+    margin: 22px 0 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px 22px;
+    gap: 10px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
     font-family: var(--font-mono);
-    font-size: var(--step--1);
-  }
-  .links a {
+    font-size: 0.74rem;
     text-decoration: none;
-    padding-bottom: 2px;
-    border-bottom: 1px solid var(--fg-faint);
-    transition: border-color 0.3s var(--ease-out);
+    color: var(--fg);
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
   }
-  .links a:hover {
-    border-color: var(--fg);
+  .pill:hover,
+  .pill:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
   }
 
   /* Tall screens: the shape floats in the top half, the story sits below it. */
@@ -234,16 +293,30 @@ const total = pad(projects.length);
     .text-right .chapter-sticky {
       align-items: flex-end;
       justify-content: flex-start;
-      padding-bottom: 6vh;
+      padding-bottom: 5vh;
     }
     .panel {
       width: 100%;
     }
-    .summary {
-      display: none;
+    .name {
+      font-size: clamp(2.8rem, 1.8rem + 6vw, 4.6rem);
     }
-    h3 {
-      font-size: clamp(2.4rem, 1.6rem + 6vw, 4rem);
+    .summary {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 0.94rem;
+    }
+    .stats {
+      margin-top: 16px;
+      padding-top: 12px;
+    }
+    .stats .value {
+      font-size: 1.7rem;
+    }
+    .stack {
+      display: none;
     }
   }
 

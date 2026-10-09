@@ -1,0 +1,86 @@
+---
+import Tone from './Tone.astro';
+import { moreWork } from '../content/projects';
+
+const words = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+const n = words[moreWork.length] ?? String(moreWork.length);
+---
+
+<section class="fork experience-only" data-beat="fork" data-side="center" data-label="Fork" data-group="Work" aria-labelledby="fork-title">
+  <div class="fork-sticky">
+    <h2 id="fork-title">
+      <Tone
+        text={{
+          immersive: 'That’s the headline work.',
+          casual: 'That’s the big stuff.',
+          recruiter: 'More',
+        }}
+      />
+    </h2>
+    <p class="choices">
+      <a class="choice" href="#more-work" data-scroll-to="#more-work">
+        <span aria-hidden="true">↓</span> {n} more projects
+      </a>
+      <a class="choice" href="#experience" data-scroll-to="#experience">
+        Skip to experience <span aria-hidden="true">→</span>
+      </a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .fork {
+    position: relative;
+    z-index: 1;
+    height: 130vh;
+  }
+  .fork-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    gap: 22px;
+    padding: 0 var(--gutter) 14vh;
+    text-align: center;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 1.4rem + 3vw, 4rem);
+    line-height: 1;
+  }
+  .choices {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .choice {
+    display: inline-flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: var(--fg);
+    background: color-mix(in srgb, var(--bg) 60%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition:
+      background-color 0.3s var(--ease-out),
+      color 0.3s var(--ease-out);
+  }
+  .choice:hover,
+  .choice:focus-visible {
+    background: var(--fg);
+    color: var(--bg);
+  }
+</style>

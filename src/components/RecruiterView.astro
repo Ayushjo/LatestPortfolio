@@ -2,6 +2,9 @@
 import { profile } from '../content/profile';
 import { projects } from '../content/projects';
 import { experience } from '../content/experience';
+
+const work = experience.filter((r) => r.kind === 'work');
+const education = experience.filter((r) => r.kind === 'education');
 ---
 
 <article class="resume recruiter-only" aria-labelledby="resume-name">
@@ -24,10 +27,10 @@ import { experience } from '../content/experience';
   </section>
 
   {
-    experience.length > 0 && (
+    work.length > 0 && (
       <section aria-labelledby="exp-h">
         <h2 id="exp-h">Experience</h2>
-        {experience.map((r) => (
+        {work.map((r) => (
           <div class="item">
             <div class="item-head">
               <h3>
@@ -35,6 +38,7 @@ import { experience } from '../content/experience';
               </h3>
               <span class="when">{r.period}</span>
             </div>
+            {r.product && <p class="role-line">{r.product}</p>}
             <ul>
               {r.points.map((p) => (
                 <li>{p}</li>
@@ -73,6 +77,26 @@ import { experience } from '../content/experience';
       ))
     }
   </section>
+
+  {
+    education.length > 0 && (
+      <section aria-labelledby="edu-h">
+        <h2 id="edu-h">Education</h2>
+        {education.map((r) => (
+          <div class="item">
+            <div class="item-head">
+              <h3>{r.company}</h3>
+              <span class="when">{r.period}</span>
+            </div>
+            <p>
+              {r.title}
+              {r.product && ` · ${r.product}`}
+            </p>
+          </div>
+        ))}
+      </section>
+    )
+  }
 
   <section aria-labelledby="skills-h">
     <h2 id="skills-h">Skills</h2>

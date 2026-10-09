@@ -1,0 +1,71 @@
+<nav class="rail experience-only" data-rail aria-label="Jump to section"></nav>
+
+<style>
+  .rail {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    z-index: 9;
+    transform: translateY(-50%);
+    display: grid;
+    gap: 14px;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out);
+  }
+  .rail:global(.is-visible) {
+    opacity: 1;
+  }
+  .rail :global(.rail-group) {
+    display: grid;
+    gap: 7px;
+    justify-items: end;
+  }
+  .rail :global(button) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-dim);
+  }
+  .rail :global(.label) {
+    opacity: 0;
+    transform: translateX(6px);
+    transition:
+      opacity 0.3s var(--ease-out),
+      transform 0.3s var(--ease-out);
+    white-space: nowrap;
+  }
+  .rail:hover :global(.label),
+  .rail :global(button:focus-visible .label),
+  .rail :global(button[aria-current='true'] .label) {
+    opacity: 1;
+    transform: none;
+  }
+  .rail :global(.dot) {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--fg-faint);
+    transition:
+      background-color 0.3s var(--ease-out),
+      transform 0.3s var(--ease-out);
+  }
+  .rail :global(button[aria-current='true']) {
+    color: var(--fg);
+  }
+  .rail :global(button[aria-current='true'] .dot) {
+    background: var(--fg);
+    transform: scale(1.6);
+  }
+  @media (max-width: 900px), (max-aspect-ratio: 23/20) {
+    .rail {
+      display: none;
+    }
+  }
+</style>

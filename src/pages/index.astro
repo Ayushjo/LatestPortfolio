@@ -4,6 +4,10 @@ import Hero from '../components/Hero.astro';
 import ModeSlider from '../components/ModeSlider.astro';
 import RecruiterView from '../components/RecruiterView.astro';
 import Work from '../components/Work.astro';
+import Fork from '../components/Fork.astro';
+import MoreWork from '../components/MoreWork.astro';
+import ExperienceSection from '../components/Experience.astro';
+import Rail from '../components/Rail.astro';
 import { profile } from '../content/profile';
 ---
 
@@ -14,10 +18,14 @@ import { profile } from '../content/profile';
   </header>
 
   <canvas class="gl-canvas experience-only" data-gl aria-hidden="true"></canvas>
+  <Rail />
 
   <main>
     <Hero />
     <Work />
+    <Fork />
+    <MoreWork />
+    <ExperienceSection />
     <RecruiterView />
   </main>
 

@@ -1,131 +1,7 @@
-import { inkCanvas } from './sample';
+import { circle, fillRect, line, ring, rng, squarify, tone, type ShapeDef } from './draw';
 
-type Ctx = CanvasRenderingContext2D;
-type Drawer = (ctx: Ctx, w: number, h: number) => void;
-
-interface ShapeDef {
-  width: number;
-  height: number;
-  draw: Drawer;
-}
-
-/** Deterministic RNG so shapes are identical on every load. */
-function rng(seed: number) {
-  return () => {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const circle = (ctx: Ctx, x: number, y: number, r: number) => {
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-};
-
-const ring = (ctx: Ctx, x: number, y: number, r: number, width: number, dash: number[] = []) => {
-  ctx.save();
-  ctx.lineWidth = width;
-  ctx.setLineDash(dash);
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-};
-
-const line = (ctx: Ctx, pts: [number, number][], width: number, dash: number[] = []) => {
-  ctx.save();
-  ctx.lineWidth = width;
-  ctx.setLineDash(dash);
-  ctx.beginPath();
-  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-  ctx.stroke();
-  ctx.restore();
-};
-
-/**
- * Fill patterns of decreasing density. The sampler scatters particles uniformly over ink,
- * so a sparser pattern reads as a dimmer silver: tone without colour.
- */
-function tone(ctx: Ctx, density: 1 | 0.5 | 0.25): string | CanvasPattern {
-  if (density === 1) return '#fff';
-  const { canvas, ctx: p } = inkCanvas(4, 4);
-  if (density === 0.5) {
-    p.fillRect(0, 0, 2, 2);
-    p.fillRect(2, 2, 2, 2);
-  } else {
-    p.fillRect(0, 0, 2, 2);
-  }
-  return ctx.createPattern(canvas, 'repeat')!;
-}
-
-interface Rect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/** Squarified treemap (Bruls, Huizing & van Wijk) — the layout DiskMap itself uses. */
-function squarify(values: number[], box: Rect): Rect[] {
-  const total = values.reduce((a, b) => a + b, 0);
-  const areas = [...values].sort((a, b) => b - a).map((v) => (v / total) * box.w * box.h);
-  const out: Rect[] = [];
-  let { x, y, w, h } = box;
-  let row: number[] = [];
-
-  const worst = (r: number[], side: number) => {
-    const s = r.reduce((a, b) => a + b, 0);
-    return Math.max(...r.map((a) => Math.max((side * side * a) / (s * s), (s * s) / (side * side * a))));
-  };
-  const flush = () => {
-    const s = row.reduce((a, b) => a + b, 0);
-    if (w >= h) {
-      const cw = s / h;
-      let cy = y;
-      for (const a of row) {
-        out.push({ x, y: cy, w: cw, h: a / cw });
-        cy += a / cw;
-      }
-      x += cw;
-      w -= cw;
-    } else {
-      const rh = s / w;
-      let cx = x;
-      for (const a of row) {
-        out.push({ x: cx, y, w: a / rh, h: rh });
-        cx += a / rh;
-      }
-      y += rh;
-      h -= rh;
-    }
-    row = [];
-  };
-
-  for (let i = 0; i < areas.length; ) {
-    const side = Math.min(w, h);
-    const a = areas[i]!;
-    if (row.length === 0 || worst([...row, a], side) <= worst(row, side)) {
-      row.push(a);
-      i++;
-    } else flush();
-  }
-  if (row.length) flush();
-  return out;
-}
-
-const fillRect = (ctx: Ctx, r: Rect, gap: number, style: string | CanvasPattern) => {
-  ctx.fillStyle = style;
-  ctx.beginPath();
-  ctx.roundRect(r.x + gap / 2, r.y + gap / 2, Math.max(0, r.w - gap), Math.max(0, r.h - gap), 6);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-};
-
-export const SHAPES: Record<string, ShapeDef> = {
+/** One signature shape per project, keyed by project slug. */
+export const PROJECT_SHAPES: Record<string, ShapeDef> = {
   /** Orchestrator at the centre, specialists in orbit, the agent factory hiring a new one. */
   sahaayak: {
     width: 1000,
@@ -365,11 +241,51 @@ export const SHAPES: Record<string, ShapeDef> = {
       for (const n of nodes) circle(ctx, n.x, n.y, n.s);
     },
   },
-};
 
-export function drawShape(slug: string): HTMLCanvasElement {
-  const def = SHAPES[slug] ?? SHAPES.strata!;
-  const { canvas, ctx } = inkCanvas(def.width, def.height);
-  def.draw(ctx, def.width, def.height);
-  return canvas;
-}
+  /** A leader's order mirrored into followers' accounts, each sized to its own settings, behind a kill-switch. */
+  believemeguys: {
+    width: 1000,
+    height: 620,
+    draw(ctx) {
+      line(ctx, [[140, 110], [140, 510]], 8);
+      fillRect(ctx, { x: 98, y: 200, w: 84, h: 220 }, 0, '#fff');
+      ring(ctx, 140, 60, 30, 8);
+      circle(ctx, 140, 60, 10);
+      const ys = [90, 200, 310, 420, 530];
+      const scale = [0.9, 0.55, 1, 0.4, 0.7];
+      ys.forEach((y, i) => {
+        line(ctx, [[196, 310], [740, y]], 5);
+        circle(ctx, 750, y, 12);
+        const s = scale[i]!;
+        const x = 860;
+        line(ctx, [[x, y - 70 * s], [x, y + 70 * s]], 5);
+        fillRect(ctx, { x: x - 18, y: y - 44 * s, w: 36, h: 88 * s }, 0, tone(ctx, i % 2 ? 0.5 : 1));
+      });
+      line(ctx, [[560, 30], [560, 590]], 3, [4, 12]);
+      fillRect(ctx, { x: 546, y: 270, w: 28, h: 80 }, 0, '#fff');
+    },
+  },
+
+  /** The stream splits: keep going, or skip ahead. */
+  fork: {
+    width: 1000,
+    height: 700,
+    draw(ctx) {
+      ctx.save();
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.moveTo(500, 690);
+      ctx.lineTo(500, 400);
+      ctx.bezierCurveTo(500, 260, 240, 260, 230, 80);
+      ctx.moveTo(500, 400);
+      ctx.bezierCurveTo(500, 260, 760, 260, 770, 80);
+      ctx.stroke();
+      ctx.restore();
+      ring(ctx, 230, 60, 40, 14);
+      ring(ctx, 770, 60, 40, 14);
+      circle(ctx, 230, 60, 14);
+      circle(ctx, 770, 60, 14);
+      for (let y = 470; y < 680; y += 46) circle(ctx, 500, y, 9);
+    },
+  },
+};

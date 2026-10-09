@@ -63,7 +63,9 @@ export function createUpdate(b: Buffers, u: Uniforms, count: number) {
     // Leaving the disc for the project shapes reuses the same spring, staggered per particle.
     const workF = smoothstep(seed.mul(0.4), seed.mul(0.4).add(0.6), u.workIn);
     const f = formIn.mul(dissolve.oneMinus()).max(workF).toVar();
-    const vortexIn = smoothstep(seed.mul(0.25).add(0.35), seed.mul(0.25).add(0.75), u.scroll).mul(workF.oneMinus());
+    const vortexIn = smoothstep(seed.mul(0.25).add(0.35), seed.mul(0.25).add(0.75), u.scroll)
+      .mul(workF.oneMinus())
+      .mul(u.beatIn.oneMinus());
 
     // Left-to-right wave between the two words (targets are sorted by x; w = rank).
     const mk = A.w.mul(0.55).add(seed2.mul(0.1));

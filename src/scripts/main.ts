@@ -1,15 +1,49 @@
 import type { Experience } from '../gl/Experience';
 import type { Quality } from '../gl/quality';
 import { getMode, hasStoredMode, onModeChange, prefersReducedMotion, setMode, type Mode } from './mode';
-import { startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll } from './scroll';
+import { initRail } from './rail';
+import { readBeats, scrollToTarget, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
 
 const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
 const heroTitle = document.querySelector<HTMLElement>('[data-hero-title]');
 const heroSection = document.querySelector<HTMLElement>('#hero');
-const chaptersEl = document.querySelector<HTMLElement>('[data-chapters]');
-const chapterSlugs = [...document.querySelectorAll<HTMLElement>('[data-chapter]')].map((el) => el.dataset.chapter!);
+const beats = readBeats();
+const railEl = document.querySelector<HTMLElement>('[data-rail]');
 if (slider) initSlider(slider);
+let stopRail: (() => void) | null = null;
+
+// In-page jumps (fork choices) go through Lenis so they glide instead of teleporting.
+document.addEventListener('click', (e) => {
+  const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-scroll-to]');
+  const target = link && document.querySelector<HTMLElement>(link.dataset.scrollTo!);
+  if (!target) return;
+  e.preventDefault();
+  scrollToTarget(target);
+});
+
+/** "More work" cards: hovering (or, on touch, scrolling one to the middle) draws its shape. */
+function setOverride(key: string | null) {
+  experience?.stream.setOverride(key ? { key, side: 'right' as ShapeSide } : null);
+}
+const cards = [...document.querySelectorAll<HTMLElement>('[data-override]')];
+for (const card of cards) {
+  card.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && setOverride(card.dataset.override!));
+  card.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && setOverride(null));
+  card.addEventListener('focusin', () => setOverride(card.dataset.override!));
+  card.addEventListener('focusout', () => setOverride(null));
+}
+if (matchMedia('(pointer: coarse)').matches && cards.length) {
+  const io = new IntersectionObserver(
+    (entries) => {
+      const hit = entries.find((en) => en.isIntersecting);
+      if (hit) setOverride((hit.target as HTMLElement).dataset.override!);
+      else if (!cards.some((c) => c.matches(':hover'))) setOverride(null);
+    },
+    { rootMargin: '-40% 0px -40% 0px' },
+  );
+  cards.forEach((c) => io.observe(c));
+}
 
 let experience: Experience | null = null;
 let generation = 0;
@@ -40,12 +74,15 @@ async function apply(mode: Mode) {
     teardown();
     stopSmoothScroll();
     untrackScroll();
+    stopRail?.();
+    stopRail = null;
     return;
   }
 
   const calm = prefersReducedMotion();
   if (!calm) startSmoothScroll();
-  trackScroll({ hero: heroSection, chapters: chaptersEl });
+  trackScroll(heroSection, beats);
+  if (railEl && !stopRail) stopRail = initRail(railEl, beats);
 
   const { detectTier, qualityFor } = await import('../gl/quality');
   tier ??= await detectTier();
@@ -66,7 +103,7 @@ async function apply(mode: Mode) {
     if (gen !== generation) return;
     const exp = await Experience.boot(canvas, q, {
       calm,
-      chapters: chapterSlugs,
+      beats: beats.map(({ key, side }) => ({ key, side })),
       hooks: {
         onFormed: () => heroTitle?.classList.add('is-handed-off'),
         onSlow: () => {
