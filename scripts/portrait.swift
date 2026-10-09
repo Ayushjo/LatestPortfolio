@@ -4,17 +4,19 @@
 //   public/portrait/ayush-avatar.png     256² smooth silver-toned avatar
 //   public/favicon-64.png, public/apple-touch-icon.png
 // The background is removed on-device with Vision person segmentation, so the wall never becomes particles.
-// Run: swift scripts/portrait.swift <photo.jpg> <cropX> <cropY> <cropSize>   (crop in image pixels, top-left origin)
+// Run: swift scripts/portrait.swift <photo.jpg> <cropX> <cropY> <cropSize> [name]   (crop in image pixels, top-left origin)
+// With [name], only public/portrait/<name>-matte.png is written (no vignette, icons untouched): extra particle images.
 import AppKit
 import CoreImage
 import CoreImage.CIFilterBuiltins
 import Vision
 
 let args = CommandLine.arguments
-guard args.count == 5, let cx = Double(args[2]), let cy = Double(args[3]), let cs = Double(args[4]) else {
-  print("usage: swift scripts/portrait.swift <photo> <cropX> <cropY> <cropSize>")
+guard args.count == 5 || args.count == 6, let cx = Double(args[2]), let cy = Double(args[3]), let cs = Double(args[4]) else {
+  print("usage: swift scripts/portrait.swift <photo> <cropX> <cropY> <cropSize> [name]")
   exit(1)
 }
+let extraName: String? = args.count == 6 ? args[5] : nil
 let photo = CIImage(contentsOf: URL(fileURLWithPath: args[1]), options: [.applyOrientationProperty: true])!
 let ci = CIContext()
 
@@ -38,7 +40,7 @@ vignette.radius0 = Float(cs * 0.27)
 vignette.radius1 = Float(cs * 0.5)
 vignette.color0 = .white
 vignette.color1 = .black
-let fadedMask = mask.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: vignette.outputImage!.cropped(to: photo.extent)])
+let fadedMask = extraName != nil ? mask : mask.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: vignette.outputImage!.cropped(to: photo.extent)])
 let subject = grey.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: black, kCIInputMaskImageKey: fadedMask])
 
 func write(_ image: CIImage, size: Int, to path: String) {
@@ -50,6 +52,11 @@ func write(_ image: CIImage, size: Int, to path: String) {
 }
 
 try? FileManager.default.createDirectory(atPath: "public/portrait", withIntermediateDirectories: true)
+if let name = extraName {
+  write(subject, size: 768, to: "public/portrait/\(name)-matte.png")
+  print("wrote public/portrait/\(name)-matte.png")
+  exit(0)
+}
 write(subject, size: 768, to: "public/portrait/ayush-matte.png")
 
 // 3. Silver halftone avatar: dot area follows luminance, on the site's near-black, circle-cropped.
