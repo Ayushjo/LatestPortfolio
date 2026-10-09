@@ -1,0 +1,5 @@
+{ "captions": [
+    { "from": 0,   "to": 2.2,  "text": "Every gigabyte has a name." },
+    { "from": 2.2, "to": 9,    "text": "freedisk.space maps a whole disk as a treemap, sunburst or bubbles." },
+    { "from": 9,   "to": 12,   "text": "1.75 million files scanned in under ten seconds, fully offline." }
+] }

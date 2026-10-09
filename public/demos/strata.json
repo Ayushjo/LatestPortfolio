@@ -1,0 +1,5 @@
+{ "captions": [
+    { "from": 0,   "to": 2.2,  "text": "Kill it mid-write." },
+    { "from": 2.2, "to": 9.2,  "text": "Every write is fsync'd, then the writer is SIGKILLed after 2.5 s." },
+    { "from": 9.2, "to": 12.5, "text": "On reopen, the write-ahead log brings back every acknowledged write." }
+] }
