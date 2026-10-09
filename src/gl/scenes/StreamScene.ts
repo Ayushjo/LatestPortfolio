@@ -1,0 +1,251 @@
+import { gsap } from 'gsap';
+import { Scene as ThreeScene, type WebGPURenderer } from 'three/webgpu';
+import type { ScrollProgress } from '../../scripts/scroll';
+import type { Input } from '../input';
+import { ParticleSystem } from '../particles/ParticleSystem';
+import { createUniforms } from '../particles/uniforms';
+import type { Quality } from '../quality';
+import { drawShape } from '../shapes/projectShapes';
+import { sampleInk, type Placement, type PointCloud } from '../shapes/sample';
+import { sampleText } from '../text/sampleText';
+import type { Scene, View } from './Scene';
+
+export interface StreamHooks {
+  onFormed?: () => void;
+}
+
+const INTRO_DELAY = 0.8;
+const FORM_DURATION = 2.6;
+const HOLD = 3.4;
+const MORPH_DURATION = 2.8;
+
+const smoothstep = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * One particle field for the whole page.
+ * Hero: stream → "AYUSH" → "SYSTEMS ENGINEER" → back, forever; scrolling dissolves the
+ * word into an orbiting disc. Work: the disc releases into one signature shape per
+ * project, morphing chapter to chapter as the page scrolls.
+ */
+export class StreamScene implements Scene {
+  readonly root = new ThreeScene();
+  readonly u = createUniforms();
+  readonly particles: ParticleSystem;
+  /** Hero choreography on one timeline so it can be paused and seeked. */
+  readonly timeline = gsap.timeline({ paused: true });
+
+  private view: View | null = null;
+  private layoutToken = 0;
+  private words: [PointCloud, PointCloud] | null = null;
+  private shapes = new Map<number, PointCloud>();
+  private loaded = '';
+  private mode: 'words' | 'work' = 'words';
+  private heroMorph = 0;
+  private pairBrightness: [number, number] = [0.2, 0.2];
+  private idleHandle = 0;
+  private offClick: () => void;
+
+  constructor(
+    private renderer: WebGPURenderer,
+    private quality: Quality,
+    private input: Input,
+    private chapters: string[],
+    private hooks: StreamHooks = {},
+    private calm = false,
+  ) {
+    this.particles = new ParticleSystem(quality.count, this.u);
+    this.root.add(this.particles.mesh);
+    this.offClick = input.onClick((x, y) => this.shock(x, y));
+    if (calm) {
+      this.u.streamSpeed.value = 0.45;
+      this.u.shockForce.value = 0;
+      this.u.detour.value = 0.5;
+    }
+  }
+
+  async init(view: View): Promise<void> {
+    this.applyView(view);
+    await this.layoutWords(view);
+    await this.particles.init(this.renderer);
+    this.play();
+    this.prefetchShapes();
+  }
+
+  update(time: number, dt: number, progress: ScrollProgress): void {
+    const { u, input, view } = this;
+    if (!view) return;
+    u.time.value = time;
+    u.dt.value = Math.min(dt, 1 / 30);
+    u.scroll.value = progress.hero;
+    u.workIn.value = progress.workIn;
+    u.pointer.value.set(input.x * view.halfW, input.y * view.halfH);
+    u.pointerSpeed.value = this.calm ? 0 : input.speed;
+    u.pointerActive.value = input.active ? 1 : 0;
+
+    if (progress.workIn > 0.001 && this.chapters.length > 0) this.showChapter(progress.chapter);
+    else this.showWords();
+
+    const [ba, bb] = this.pairBrightness;
+    u.brightness.value = ba + (bb - ba) * u.morph.value;
+    this.particles.step(this.renderer);
+  }
+
+  resize(view: View): void {
+    this.applyView(view);
+    this.shapes.clear();
+    this.loaded = '';
+    void this.layoutWords(view);
+    this.prefetchShapes();
+  }
+
+  dispose(): void {
+    this.timeline.kill();
+    this.offClick();
+    cancelIdle(this.idleHandle);
+    this.particles.dispose();
+  }
+
+  /** Dev: restart the simulation from scratch with the timeline paused at 0. */
+  async reset(): Promise<void> {
+    this.timeline.pause(0);
+    this.u.time.value = 0;
+    this.u.form.value = 0;
+    this.u.morph.value = 0;
+    await this.particles.init(this.renderer);
+  }
+
+  private showWords() {
+    if (this.mode === 'work') {
+      this.mode = 'words';
+      this.u.morph.value = this.heroMorph;
+      this.timeline.resume();
+    }
+    if (this.words) this.load('words', this.words[0], this.words[1]);
+  }
+
+  private showChapter(chapter: number) {
+    if (this.mode === 'words') {
+      this.mode = 'work';
+      this.heroMorph = this.u.morph.value;
+      this.timeline.pause();
+    }
+    const last = this.chapters.length - 1;
+    const k = Math.max(0, Math.min(last, Math.floor(chapter)));
+    const next = Math.min(k + 1, last);
+    this.load(`chapter-${k}`, this.shape(k), this.shape(next));
+    // Hold each shape while its story is on screen; morph as the next chapter scrolls in.
+    this.u.morph.value = next === k ? 0 : smoothstep(0.45, 0.95, chapter - k);
+  }
+
+  /** Swap the A/B target buffers. Only happens at boundaries, where morph is 0 or 1, so it is seamless. */
+  private load(key: string, a: PointCloud, b: PointCloud) {
+    if (key === this.loaded || !this.view) return;
+    this.particles.setTargets('targetA', a.data);
+    this.particles.setTargets('targetB', b.data);
+    this.pairBrightness = [this.brightnessFor(a.inkArea, this.view), this.brightnessFor(b.inkArea, this.view)];
+    this.loaded = key;
+  }
+
+  private shape(k: number): PointCloud {
+    let cloud = this.shapes.get(k);
+    if (!cloud && this.view) {
+      cloud = sampleInk(drawShape(this.chapters[k]!), this.quality.count, this.placement(k, this.view));
+      this.shapes.set(k, cloud);
+    }
+    return cloud!;
+  }
+
+  /** Shapes sit opposite their story: alternating sides on wide screens, above it on tall ones. */
+  private placement(k: number, view: View): Placement {
+    const wide = view.halfW / view.halfH > 1.15;
+    if (wide) {
+      const side = k % 2 === 0 ? 1 : -1;
+      return { centerX: side * view.halfW * 0.44, centerY: 0, maxWidth: view.halfW * 0.78, maxHeight: view.halfH * 1.3 };
+    }
+    return { centerX: 0, centerY: view.halfH * 0.42, maxWidth: view.halfW * 1.7, maxHeight: view.halfH * 0.72 };
+  }
+
+  /** Build every chapter's point cloud during idle time so scrolling never waits on it. */
+  private prefetchShapes() {
+    cancelIdle(this.idleHandle);
+    let k = 0;
+    const next = () => {
+      while (k < this.chapters.length && this.shapes.has(k)) k++;
+      if (k >= this.chapters.length) return;
+      this.shape(k);
+      this.idleHandle = requestIdle(next);
+    };
+    this.idleHandle = requestIdle(next);
+  }
+
+  private applyView(view: View) {
+    this.view = view;
+    this.u.halfW.value = view.halfW;
+    this.u.halfH.value = view.halfH;
+    this.u.size.value = this.quality.particlePx * view.unitsPerPx;
+    this.u.cursorRadius.value = Math.max(0.55, Math.min(0.9, view.halfH * 0.15));
+    this.u.vortex.value.set(0, view.halfH * 0.18);
+  }
+
+  private async layoutWords(view: View) {
+    const token = ++this.layoutToken;
+    const w = view.halfW * 2;
+    const h = view.halfH * 2;
+    const wide = view.halfW / view.halfH > 1.15;
+
+    const [a, b] = await Promise.all([
+      sampleText({ lines: ['Ayush'], worldWidth: Math.min(w * 0.7, h * 1.3), centerY: h * 0.02 }, this.quality.count),
+      sampleText(
+        wide
+          ? { lines: ['Systems Engineer'], worldWidth: Math.min(w * 0.8, h * 2.4), centerY: h * 0.02 }
+          : { lines: ['Systems', 'Engineer'], worldWidth: w * 0.84, centerY: h * 0.02 },
+        this.quality.count,
+      ),
+    ]);
+    if (token !== this.layoutToken) return;
+    this.words = [a, b];
+    this.loaded = '';
+    if (this.mode === 'words') this.load('words', a, b);
+  }
+
+  /**
+   * Additive particles stack up: scale brightness so a formed shape lands just under white
+   * regardless of particle count, screen size or how much ink the shape has.
+   */
+  private brightnessFor(inkArea: number, view: View) {
+    const inkPx = inkArea / (view.unitsPerPx * view.unitsPerPx);
+    const px = this.quality.particlePx;
+    const overlap = (this.quality.count * 0.785 * px * px) / Math.max(1, inkPx);
+    return Math.min(1, Math.max(0.03, 0.95 / overlap));
+  }
+
+  private play() {
+    const { u } = this;
+    const loop = gsap
+      .timeline({ repeat: -1 })
+      .to(u.morph, { value: 1, duration: MORPH_DURATION, ease: 'power2.inOut' })
+      .to({}, { duration: HOLD })
+      .to(u.morph, { value: 0, duration: MORPH_DURATION, ease: 'power2.inOut' })
+      .to({}, { duration: HOLD });
+    this.timeline
+      .to(u.form, { value: 1, duration: FORM_DURATION, ease: 'power2.inOut' }, INTRO_DELAY)
+      .call(() => this.hooks.onFormed?.(), [], INTRO_DELAY + FORM_DURATION * 0.55)
+      .add(loop, INTRO_DELAY + FORM_DURATION + HOLD)
+      .play(0);
+  }
+
+  private shock(x: number, y: number) {
+    if (!this.view || this.calm) return;
+    this.u.shockPos.value.set(x * this.view.halfW, y * this.view.halfH);
+    this.u.shockTime.value = this.u.time.value;
+  }
+}
+
+// Safari has no requestIdleCallback.
+const hasIdle = typeof requestIdleCallback === 'function';
+const requestIdle = (fn: () => void): number =>
+  hasIdle ? requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 60);
+const cancelIdle = (h: number) => (hasIdle ? cancelIdleCallback(h) : clearTimeout(h));

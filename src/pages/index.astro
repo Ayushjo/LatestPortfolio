@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import ModeSlider from '../components/ModeSlider.astro';
+import RecruiterView from '../components/RecruiterView.astro';
+import Work from '../components/Work.astro';
+import { profile } from '../content/profile';
+---
+
+<Base>
+  <header class="site-header">
+    <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+    <ModeSlider />
+  </header>
+
+  <canvas class="gl-canvas experience-only" data-gl aria-hidden="true"></canvas>
+
+  <main>
+    <Hero />
+    <Work />
+    <RecruiterView />
+  </main>
+
+  <noscript>
+    <style>
+      .experience-only { display: none !important; }
+      .recruiter-only { display: block !important; }
+    </style>
+  </noscript>
+</Base>
+
+<script>
+  import '../scripts/main';
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px var(--gutter);
+    pointer-events: none;
+  }
+  .site-header > :global(*) {
+    pointer-events: auto;
+  }
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    color: var(--fg);
+  }
+  .mark span {
+    color: var(--fg-faint);
+    margin: 0 2px;
+  }
+  @media print {
+    .site-header {
+      display: none;
+    }
+  }
+</style>

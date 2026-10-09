@@ -1,0 +1,88 @@
+---
+const stops = [
+  { id: 'immersive', label: 'Immersive' },
+  { id: 'casual', label: 'Casual' },
+  { id: 'recruiter', label: 'Recruiter' },
+] as const;
+---
+
+<div class="mode-slider" role="radiogroup" aria-label="Viewing mode" data-mode-slider>
+  <span class="thumb" aria-hidden="true"></span>
+  {
+    stops.map((s) => (
+      <button type="button" role="radio" class="stop" data-stop={s.id} aria-checked="false">
+        {s.label}
+      </button>
+    ))
+  }
+</div>
+
+<style>
+  .mode-slider {
+    --i: 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    user-select: none;
+    touch-action: none;
+  }
+
+  :global(:root[data-mode='immersive']) .mode-slider { --i: 0; }
+  :global(:root[data-mode='casual']) .mode-slider { --i: 1; }
+  :global(:root[data-mode='recruiter']) .mode-slider { --i: 2; }
+
+  .thumb {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((100% - 8px) / 3);
+    border-radius: 999px;
+    background: var(--fg);
+    transform: translateX(calc(var(--i) * 100%));
+    transition: transform 0.55s var(--ease-out), background-color 0.5s var(--ease-out);
+  }
+  .mode-slider.is-dragging .thumb {
+    transition: none;
+  }
+
+  .stop {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    border: 0;
+    background: none;
+    padding: 8px 14px;
+    color: var(--fg-dim);
+    font: inherit;
+    cursor: pointer;
+    border-radius: 999px;
+    transition: color 0.4s var(--ease-out);
+    white-space: nowrap;
+  }
+  .stop[aria-checked='true'] {
+    color: var(--bg);
+  }
+  .stop:focus-visible {
+    outline: 1px solid var(--fg);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 420px) {
+    .stop {
+      padding: 7px 10px;
+    }
+    .mode-slider {
+      font-size: 0.66rem;
+    }
+  }
+</style>

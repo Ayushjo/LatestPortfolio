@@ -1,0 +1,14 @@
+---
+import type { Toned } from '../content/profile';
+
+interface Props {
+  text: Toned;
+  as?: 'span' | 'p';
+  class?: string;
+}
+
+const { text, as: Tag = 'span', class: className } = Astro.props;
+const modes = ['immersive', 'casual', 'recruiter'] as const;
+---
+
+{modes.map((m) => text[m] && <Tag class={className} data-tone={m}>{text[m]}</Tag>)}

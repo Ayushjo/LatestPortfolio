@@ -1,0 +1,225 @@
+---
+import { profile } from '../content/profile';
+import { projects } from '../content/projects';
+import { experience } from '../content/experience';
+---
+
+<article class="resume recruiter-only" aria-labelledby="resume-name">
+  <header class="resume-head">
+    <div>
+      <h1 id="resume-name">{profile.name}</h1>
+      <p class="role">{profile.role} · {profile.location}</p>
+    </div>
+    <ul class="contact">
+      <li><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
+      <li><a href={profile.links.github}>GitHub</a></li>
+      <li><a href={profile.links.linkedin}>LinkedIn</a></li>
+      <li><a href={profile.links.resume}>Résumé (PDF)</a></li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="summary-h">
+    <h2 id="summary-h">Summary</h2>
+    <p>{profile.bio.recruiter}</p>
+  </section>
+
+  {
+    experience.length > 0 && (
+      <section aria-labelledby="exp-h">
+        <h2 id="exp-h">Experience</h2>
+        {experience.map((r) => (
+          <div class="item">
+            <div class="item-head">
+              <h3>
+                {r.title} — {r.company}
+              </h3>
+              <span class="when">{r.period}</span>
+            </div>
+            <ul>
+              {r.points.map((p) => (
+                <li>{p}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    )
+  }
+
+  <section aria-labelledby="proj-h">
+    <h2 id="proj-h">Projects</h2>
+    {
+      projects.map((p) => (
+        <div class="item">
+          <div class="item-head">
+            <h3>{p.name}</h3>
+            <span class="when">{p.tags.join(' · ')}</span>
+          </div>
+          {p.role && <p class="role-line">{p.role}</p>}
+          <p>{p.summary}</p>
+          <ul class="metrics">
+            {p.metrics.map((m) => (
+              <li>{m}</li>
+            ))}
+          </ul>
+          {p.links.length > 0 && (
+            <p class="proj-links">
+              {p.links.map((l) => (
+                <a href={l.href}>{l.label}</a>
+              ))}
+            </p>
+          )}
+        </div>
+      ))
+    }
+  </section>
+
+  <section aria-labelledby="skills-h">
+    <h2 id="skills-h">Skills</h2>
+    <dl class="skills">
+      {
+        Object.entries(profile.skills).map(([group, list]) => (
+          <div>
+            <dt>{group}</dt>
+            <dd>{list.join(', ')}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+</article>
+
+<style>
+  .resume {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 120px var(--gutter) 96px;
+    font-size: var(--step-0);
+    line-height: 1.6;
+  }
+  .resume-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  h1 {
+    margin: 0;
+    font-size: var(--step-2);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .role {
+    margin: 4px 0 0;
+    color: var(--fg-dim);
+  }
+  .contact {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+  .contact a,
+  .proj-links a {
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .contact a:hover,
+  .proj-links a:hover {
+    border-color: var(--fg);
+  }
+  .role-line {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--fg-dim);
+  }
+  .item .proj-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+  }
+  section {
+    padding-top: 32px;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-dim);
+  }
+  .item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .item:last-child {
+    border-bottom: 0;
+  }
+  .item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  h3 {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .when {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--fg-dim);
+  }
+  .item p {
+    margin: 6px 0;
+  }
+  .metrics {
+    margin: 4px 0 0;
+    padding-left: 18px;
+    color: var(--fg-dim);
+  }
+  .skills {
+    margin: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .skills div {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+  }
+  .skills dt {
+    font-weight: 500;
+  }
+  .skills dd {
+    margin: 0;
+    color: var(--fg-dim);
+  }
+  @media (max-width: 560px) {
+    .skills div {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+  @media print {
+    .resume {
+      padding-top: 0;
+    }
+  }
+</style>

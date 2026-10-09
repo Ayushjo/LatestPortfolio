@@ -1,0 +1,131 @@
+---
+import Tone from './Tone.astro';
+import { profile } from '../content/profile';
+---
+
+<section class="hero experience-only" id="hero" aria-labelledby="hero-title">
+  <div class="hero-sticky">
+    <h1 id="hero-title" class="hero-title" data-hero-title>
+      <span class="word">{profile.firstName}</span>
+      <span class="sr-only"> Singh — {profile.role}</span>
+    </h1>
+
+    <div class="hero-foot">
+      <Tone as="p" class="tagline" text={profile.tagline} />
+      <p class="meta">
+        <span>{profile.location}</span>
+        <span aria-hidden="true">·</span>
+        <span>Rust / TypeScript / Python</span>
+      </p>
+    </div>
+
+    <p class="scroll-hint" aria-hidden="true">
+      <Tone text={profile.scrollHint} />
+      <span class="line"></span>
+    </p>
+  </div>
+</section>
+
+
+<style>
+  .hero {
+    position: relative;
+    z-index: 1;
+    height: 220vh;
+  }
+
+  .hero-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 0 var(--gutter);
+  }
+
+  .hero-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 900;
+    /* Sized to match the particle word (≈ min(70vw, 130vh) wide) so the hand-off lines up. */
+    font-size: min(20.5vw, 38vh);
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    transform: translateY(-1vh);
+    text-transform: uppercase;
+    color: var(--fg);
+    transition: opacity 1.4s var(--ease-out), filter 1.4s var(--ease-out);
+  }
+  /* Once particles have formed the word, the HTML word steps aside but stays readable to assistive tech. */
+  .hero-title.is-handed-off .word {
+    opacity: 0;
+    filter: blur(12px);
+    transition: inherit;
+  }
+  .hero-title .word {
+    display: inline-block;
+    transition: opacity 1.4s var(--ease-out), filter 1.4s var(--ease-out);
+  }
+
+  .hero-foot {
+    position: absolute;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: clamp(28px, 7vh, 72px);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .hero-foot :global(.tagline) {
+    margin: 0;
+    max-width: 30ch;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--step-2);
+    line-height: 1.1;
+    color: var(--fg);
+  }
+
+  .meta {
+    margin: 0;
+    display: flex;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    top: 50%;
+    right: var(--gutter);
+    margin: 0;
+    writing-mode: vertical-rl;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    transform: translateY(-50%);
+  }
+  .scroll-hint .line {
+    width: 1px;
+    height: 56px;
+    background: linear-gradient(var(--fg-faint), transparent);
+  }
+
+  @media (max-width: 640px) {
+    .scroll-hint {
+      display: none;
+    }
+  }
+</style>
