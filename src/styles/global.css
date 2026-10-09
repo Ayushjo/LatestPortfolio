@@ -78,3 +78,14 @@ a {
     transition: none;
   }
 }
+
+/* Every page's fixed header gets a soft scrim, so text scrolling underneath never collides
+   with the mark and the mode slider. */
+.site-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -24px;
+  z-index: -1;
+  background: linear-gradient(var(--bg) 45%, color-mix(in srgb, var(--bg) 70%, transparent) 70%, transparent);
+  pointer-events: none;
+}

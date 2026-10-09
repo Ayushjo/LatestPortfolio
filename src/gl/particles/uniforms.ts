@@ -46,6 +46,8 @@ export function createUniforms() {
     videoGain: uniform(2.1),
     /** Dims particles inside the rect once the crisp clip is shown on top of them. */
     particleDim: uniform(1),
+    /** Whole-field dim, for when an inline demo has the reader's attention. */
+    fieldDim: uniform(1),
 
     // look
     size: uniform(0.02),

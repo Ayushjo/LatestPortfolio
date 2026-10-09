@@ -44,7 +44,7 @@ const total = pad(featured.length);
               <span class="total">{total}</span>
             </p>
             {p.role && <p class="role">{p.role}</p>}
-            <h3 id={`p-${p.slug}`} class="name">
+            <h3 id={`p-${p.slug}`} class="name" style={`--chars: ${p.name.length}`}>
               {p.name}
             </h3>
             <p class="tagline">{p.tagline}</p>
@@ -154,6 +154,7 @@ const total = pad(featured.length);
 
   .panel {
     width: min(44vw, 560px);
+    container-type: inline-size;
   }
   .panel > * {
     opacity: 0;
@@ -207,7 +208,8 @@ const total = pad(featured.length);
     font-family: var(--font-serif);
     font-style: italic;
     font-weight: 400;
-    font-size: clamp(3.4rem, 1.6rem + 5vw, 7.5rem);
+    /* Long names shrink to fit the panel (~0.44em per character in this face). */
+    font-size: min(clamp(3.4rem, 1.6rem + 5vw, 7.5rem), 100cqi / (var(--chars) * 0.44));
     letter-spacing: -0.02em;
     line-height: 0.9;
     color: var(--fg);
@@ -387,7 +389,7 @@ const total = pad(featured.length);
       width: 100%;
     }
     .name {
-      font-size: clamp(2.8rem, 1.8rem + 6vw, 4.6rem);
+      font-size: min(clamp(2.8rem, 1.8rem + 6vw, 4.6rem), 100cqi / (var(--chars) * 0.44));
     }
     .summary {
       display: -webkit-box;
@@ -404,6 +406,16 @@ const total = pad(featured.length);
       font-size: 1.7rem;
     }
     .stack {
+      display: none;
+    }
+    /* An inline demo keeps only the name, controls and the clip. */
+    .chapter:global(.is-demo) .panel {
+      width: 100%;
+    }
+    .chapter:global(.is-demo) .role,
+    .chapter:global(.is-demo) .tagline,
+    .chapter:global(.is-demo) .summary,
+    .chapter:global(.is-demo) .stats {
       display: none;
     }
   }

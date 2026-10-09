@@ -88,7 +88,8 @@ export class DemoPlane {
 
   update(dt: number) {
     if (this.delay > 0) {
-      this.delay -= dt;
+      // The countdown only runs once there is a frame to show.
+      if (this.ready) this.delay -= dt;
       return;
     }
     const rate = this.target ? 2.2 : 6;

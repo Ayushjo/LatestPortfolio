@@ -54,6 +54,8 @@ export class StreamScene implements Scene {
   private mode: 'words' | 'beats' = 'words';
   private heroMorph = 0;
   private pairBrightness: [number, number] = [0.2, 0.2];
+  /** 0..1 while a tall screen is between two stories (see showBeat). */
+  private gap = 0;
   private override: BeatSpec | null = null;
   private overrideMix = { value: 0, target: 0 };
   private idleHandle = 0;
@@ -101,7 +103,7 @@ export class StreamScene implements Scene {
     else this.showWords();
 
     const [ba, bb] = this.pairBrightness;
-    u.brightness.value = ba + (bb - ba) * u.morph.value;
+    u.brightness.value = (ba + (bb - ba) * u.morph.value) * (1 - 0.6 * this.gap);
     this.particles.step(this.renderer);
   }
 
@@ -148,6 +150,7 @@ export class StreamScene implements Scene {
   }
 
   private showWords() {
+    this.gap = 0;
     if (this.mode === 'beats') {
       this.mode = 'words';
       this.u.morph.value = this.heroMorph;
@@ -169,10 +172,16 @@ export class StreamScene implements Scene {
     const a = this.beats[k]!;
     let b = this.beats[next]!;
     // Hold each shape while its story is on screen; morph as the next beat scrolls in.
-    let m = next === k ? 0 : smoothstep(0.45, 0.95, progress.beat - k);
+    const local = progress.beat - k;
+    let m = next === k ? 0 : smoothstep(0.45, 0.95, local);
+    // Tall screens stack the shape above its story, so once the story unpins and scrolls up
+    // the shape lets go into a dim stream, and re-forms as the next story settles.
+    const tall = this.view ? this.view.halfW / this.view.halfH <= 1.15 : false;
+    this.gap = tall && next !== k ? smoothstep(0.24, 0.36, local) * (1 - smoothstep(0.8, 0.98, local)) : 0;
     if (this.override) {
       b = this.override;
       m = this.overrideMix.value;
+      this.gap = 0;
     }
 
     const ca = this.cloud(a);
@@ -187,7 +196,7 @@ export class StreamScene implements Scene {
     const B = cb ?? ca;
     if (A && B) this.load(`${id(a)}→${id(b)}`, A, B);
     this.u.morph.value = m;
-    this.u.workIn.value = progress.beatIn * (formA + (formB - formA) * m);
+    this.u.workIn.value = progress.beatIn * (formA + (formB - formA) * m) * (1 - this.gap);
   }
 
   /** Swap the A/B target buffers. Only happens where morph is 0 or 1, so it is seamless. */
@@ -306,7 +315,7 @@ export class StreamScene implements Scene {
     const inkPx = inkArea / (view.unitsPerPx * view.unitsPerPx);
     const px = this.quality.particlePx;
     const overlap = (this.quality.count * 0.785 * px * px) / Math.max(1, inkPx);
-    return Math.min(1, Math.max(0.03, 0.95 / overlap));
+    return Math.min(1, Math.max(0.004, 0.95 / overlap));
   }
 
   private play() {

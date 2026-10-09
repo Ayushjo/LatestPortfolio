@@ -82,6 +82,15 @@ export class Experience {
     this.stream.setOverride(null);
   }
 
+  /** Tall screens play demos inline in the panel: release the shape so it doesn't sit behind the clip. */
+  quietShape(on: boolean): void {
+    if (this.demo.active) return;
+    this.quiet.target = on ? 1 : 0;
+    this.stream.setOverride(on ? { key: 'stream', side: 'center' } : null);
+  }
+  private quiet = { value: 0, target: 0 };
+  private waiting = { value: 0 };
+
   /** The playing clip, for the page's progress line and captions. */
   get demoVideo(): HTMLVideoElement | null {
     return this.demo.active ? this.demo.video : null;
@@ -161,7 +170,13 @@ export class Experience {
     const want = demo.active && demo.ready ? 1 : 0;
     // Particles carry the clip while they fly in; they let go of it gently on the way out.
     u.videoMix.value += (want - u.videoMix.value) * (1 - Math.exp(-dt * (want ? 2.5 : 1.2)));
-    u.particleDim.value = 1 - 0.88 * demo.crisp;
+    const q = this.quiet;
+    q.value += (q.target - q.value) * (1 - Math.exp(-dt * 3));
+    // A screen still waiting for its first frame glows softly rather than as a white slab.
+    const w = this.waiting;
+    w.value += ((demo.active && !demo.ready ? 1 : 0) - w.value) * (1 - Math.exp(-dt * 4));
+    u.particleDim.value = (1 - 0.88 * demo.crisp) * (1 - 0.7 * w.value);
+    u.fieldDim.value = 1 - 0.65 * q.value;
     if (!demo.active && u.videoMix.value < 0.01) demo.release();
 
     const pu = this.post.uniforms;

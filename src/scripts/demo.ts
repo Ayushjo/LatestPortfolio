@@ -61,6 +61,8 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
     const exp = getExp();
     if (tall() || !exp) {
       mode = 'inline';
+      chapterOf(btn)?.classList.add('is-demo');
+      exp?.quietShape(true);
       const video = inlineOf(btn);
       if (video) {
         if (!video.getAttribute('src')) video.src = btn.dataset.src!;
@@ -85,6 +87,7 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
     }
     const cap = inlineCaptionOf(btn);
     if (cap) cap.textContent = '';
+    if (mode === 'inline') getExp()?.quietShape(false);
     getExp()?.hideDemo();
     hud?.classList.remove('is-on');
     if (playing === btn) {
