@@ -61,19 +61,20 @@ Add `?debug` to the URL for a live tweak panel of every shader uniform, or `?gl=
 
 ## Demo videos
 
-A project with a `demo` plays it *inside the particles*. On wide screens, once a chapter has been held for about 1.5 s (or the visitor presses **▶ Demo**), the shape morphs into a glowing frame and the clip fades in. It's silver by default, and full colour on hover. Phones get an inline video in the panel instead.
+A project with a demo plays it *through the particles*:
+1. When a chapter is held for about 1.5 s on a wide screen (or the visitor presses **▶ Demo**), the particles leave the shape and fly into a large 16:10 screen.
+2. Each particle takes the colour of its pixel in the playing clip, so the demo first appears as moving dots.
+3. Then the crisp, true-colour clip fades in over them.
+4. While it plays, the story panel compacts to the name and numbers, and a progress line and synced captions sit under the clip.
 
-Drop `public/demos/<slug>.mp4` (and optionally `<slug>.jpg` as the poster frame) and rebuild; the site picks it up automatically. An explicit `demo` field in `src/content/projects.ts` overrides that.
+Phones play the clip inline in the panel with the same captions.
 
-To record clips, paste the prompt in [`docs/demo-video-prompt.md`](docs/demo-video-prompt.md) into Claude Code inside each project's folder.
+Drop these files into `public/demos/` and rebuild; they're picked up automatically:
+- `<slug>.mp4`: the clip
+- `<slug>.jpg`: optional poster frame
+- `<slug>.json`: optional captions, in the form `{ "captions": [{ "from": 0, "to": 2.2, "text": "…" }] }`
 
-**Recording spec:**
-- An 8–15 s silent loop.
-- 16:10 at 1600×1000.
-- H.264 MP4, ideally ≤ 3 MB. To compress: `ffmpeg -i in.mov -vf scale=1600:-2 -c:v libx264 -crf 28 -an -movflags +faststart out.mp4`
-- Start and end on similar frames so the loop is seamless.
-
-Ideas: Sahaayak (a cut from the YouTube demo), Pullwright's live dashboard, DiskMap drilling down the treemap, Relay/Strata benchmark runs in a terminal (VHS or asciinema), BelieveMeGuys mirroring a fill.
+Record clips with the prompt in [`docs/demo-video-prompt.md`](docs/demo-video-prompt.md). It sets the house style (near-black, dark-mode UIs, Instrument Serif titles, a hook → proof → number arc) and writes all three files.
 
 ## Deploy
 

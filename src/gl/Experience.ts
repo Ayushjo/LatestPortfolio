@@ -6,7 +6,6 @@ import { createPipeline, type Pipeline } from './post/pipeline';
 import type { Quality } from './quality';
 import { createRenderer } from './renderer';
 import { StreamScene, type BeatSpec, type StreamHooks } from './scenes/StreamScene';
-import { FRAME } from './shapes/projects';
 import { DemoPlane } from './video/DemoPlane';
 import type { ShapeSide } from '../scripts/scroll';
 import type { View } from './scenes/Scene';
@@ -44,7 +43,7 @@ export class Experience {
   ) {
     this.stream = new StreamScene(renderer, quality, this.input, beats, hooks, calm);
     this.post = createPipeline(renderer, this.stream.root, this.camera, quality, this.stream.u.time);
-    this.demo = new DemoPlane(this.stream.root);
+    this.demo = new DemoPlane(this.stream.root, this.stream.u);
   }
 
   static async boot(
@@ -66,14 +65,15 @@ export class Experience {
     return exp;
   }
 
-  /** Particles form a screen frame on `side`, then the clip fades in inside it. */
+  /**
+   * Play a project demo on `side`: the particles fly into a 16:10 screen and show the clip
+   * as moving dots, then the crisp clip fades in over them.
+   */
   showDemo(src: string, side: ShapeSide): void {
-    const view = currentView();
-    const p = this.stream.placement(side, view);
-    const s = Math.min(p.maxWidth / FRAME.width, p.maxHeight / FRAME.height);
-    const h = (FRAME.height - FRAME.video * 2) * s;
-    this.stream.setOverride({ key: 'frame', side });
-    this.demo.show(src, { cx: p.centerX, cy: p.centerY, w: h * 1.6, h });
+    const r = this.stream.stage(side, currentView());
+    this.stream.u.videoRect.value.set(r.cx - r.w / 2, r.cy - r.h / 2, r.w, r.h);
+    this.stream.setOverride({ key: 'screen', side });
+    this.demo.show(src, r, 2.4);
   }
 
   hideDemo(): void {
@@ -82,11 +82,12 @@ export class Experience {
     this.stream.setOverride(null);
   }
 
-  setDemoColour(on: boolean): void {
-    this.demo.setColour(on);
+  /** The playing clip, for the page's progress line and captions. */
+  get demoVideo(): HTMLVideoElement | null {
+    return this.demo.active ? this.demo.video : null;
   }
 
-  /** The playing clip's rectangle in CSS pixels, for hover tests. */
+  /** The playing clip's rectangle in CSS pixels, for the progress line and captions. */
   demoScreenRect(): DOMRect | null {
     const r = this.demo.rect;
     if (!r || !this.demo.active) return null;
@@ -154,9 +155,17 @@ export class Experience {
   };
 
   private stepDemo(dt: number) {
-    this.demo.update(dt);
+    const { demo, stream } = this;
+    demo.update(dt);
+    const u = stream.u;
+    const want = demo.active ? 1 : 0;
+    // Particles carry the clip while they fly in; they let go of it gently on the way out.
+    u.videoMix.value += (want - u.videoMix.value) * (1 - Math.exp(-dt * (want ? 2.5 : 1.2)));
+    u.particleDim.value = 1 - 0.88 * demo.crisp;
+    if (!demo.active && u.videoMix.value < 0.01) demo.release();
+
     const pu = this.post.uniforms;
-    pu.clearAmt.value = this.demo.u.colour.value;
+    pu.clearAmt.value = demo.crisp;
     const r = this.demoScreenRect();
     if (r) pu.clearRect.value.set(r.left / innerWidth, r.top / innerHeight, r.right / innerWidth, r.bottom / innerHeight);
   }
@@ -183,6 +192,7 @@ export class Experience {
   }
 
   private onResize = () => {
+    this.hideDemo();
     const view = currentView();
     this.renderer.setSize(innerWidth, innerHeight, false);
     this.applyCamera(view);

@@ -70,6 +70,7 @@ const total = pad(featured.length);
                     class="pill demo-btn"
                     data-demo={p.slug}
                     data-src={demo.src}
+                    data-captions={demo.captions}
                     data-side={i % 2 === 0 ? 'right' : 'left'}
                     aria-pressed="false"
                   >
@@ -86,6 +87,7 @@ const total = pad(featured.length);
             )}
             {demo && (
               <video class="inline-demo" data-inline-demo={p.slug} poster={demo.poster || undefined} muted loop playsinline preload="none" hidden />
+              <p class="inline-caption" data-inline-caption={p.slug} aria-live="polite" />
             )}
           </div>
         </div>
@@ -325,12 +327,49 @@ const total = pad(featured.length);
     border: 1px solid var(--line);
     border-radius: 12px;
     background: var(--bg-raised);
-    filter: grayscale(1) contrast(1.05);
-    transition: filter 0.5s var(--ease-out);
   }
-  .inline-demo:hover,
-  .inline-demo:active {
-    filter: none;
+  .inline-caption {
+    margin: 8px 0 0;
+    min-height: 1.3em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--fg);
+  }
+  .inline-caption:empty {
+    display: none;
+  }
+
+  /* While a demo has the stage, the story steps back to name, numbers and controls. */
+  .panel {
+    transition: width 0.8s var(--ease-out);
+  }
+  .chapter:global(.is-demo) .panel {
+    width: min(30vw, 400px);
+  }
+  .summary,
+  .stack,
+  .tagline {
+    transition:
+      opacity 0.5s var(--ease-out),
+      max-height 0.8s var(--ease-out),
+      margin 0.8s var(--ease-out);
+    max-height: 20em;
+  }
+  .chapter:global(.is-demo) .summary,
+  .chapter:global(.is-demo) .stack {
+    opacity: 0;
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+  }
+  .chapter:global(.is-demo) .stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .chapter:global(.is-demo) .stats li + li {
+    padding-left: 0;
+    border-left: 0;
   }
   .inline-demo[hidden] {
     display: none;

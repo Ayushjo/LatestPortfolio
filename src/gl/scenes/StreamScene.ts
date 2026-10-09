@@ -6,7 +6,7 @@ import { ParticleSystem } from '../particles/ParticleSystem';
 import { createUniforms } from '../particles/uniforms';
 import type { Quality } from '../quality';
 import { isStream, shapeCanvas } from '../shapes';
-import { sampleInk, type Placement, type PointCloud } from '../shapes/sample';
+import { gridCloud, sampleInk, type Placement, type PointCloud, type Rect } from '../shapes/sample';
 import { sampleText } from '../text/sampleText';
 import type { Scene, View } from './Scene';
 
@@ -219,9 +219,13 @@ export class StreamScene implements Scene {
     this.building.add(k);
     const view = this.view;
     try {
-      const canvas = await shapeCanvas(spec.key, view.halfW / view.halfH > 1.15);
-      if (view !== this.view) return;
-      this.clouds.set(k, canvas ? sampleInk(canvas, this.quality.count, this.placement(spec.side, view)) : null);
+      if (spec.key === 'screen') {
+        this.clouds.set(k, gridCloud(this.quality.count, this.stage(spec.side, view)));
+      } else {
+        const canvas = await shapeCanvas(spec.key, view.halfW / view.halfH > 1.15);
+        if (view !== this.view) return;
+        this.clouds.set(k, canvas ? sampleInk(canvas, this.quality.count, this.placement(spec.side, view)) : null);
+      }
       while (this.clouds.size > CACHE_LIMIT) this.clouds.delete(this.clouds.keys().next().value!);
     } finally {
       this.building.delete(k);
@@ -240,6 +244,18 @@ export class StreamScene implements Scene {
       await this.ensure(todo[0]!);
       if (todo.length > 1) this.prefetch(indices);
     });
+  }
+
+  /**
+   * The demo stage: a 16:10 screen about 60% of the width, on the shape's side, leaving a
+   * slim column for the (compacted) story.
+   */
+  stage(side: ShapeSide, view: View): Rect {
+    const w = Math.min(view.halfW * 1.2, view.halfH * 1.5 * 1.6);
+    const h = w / 1.6;
+    const s = side === 'left' ? -1 : 1;
+    const cx = s * (view.halfW * 0.92 - w / 2);
+    return { cx, cy: 0, w, h };
   }
 
   /** Shapes sit opposite their story on wide screens, above it on tall ones. */

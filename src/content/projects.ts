@@ -24,7 +24,7 @@ export interface Project {
   metrics: string[];
   tags: string[];
   links: ProjectLink[];
-  demo?: { src: string; poster: string };
+  demo?: { src: string; poster: string; captions?: string };
 }
 
 /** Display order is the order of this array. */

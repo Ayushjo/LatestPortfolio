@@ -28,6 +28,10 @@ import { profile } from '../content/profile';
 
   <canvas class="gl-canvas experience-only" data-gl aria-hidden="true"></canvas>
   <Rail />
+  <div class="demo-hud experience-only" data-demo-hud aria-hidden="true">
+    <div class="track"><span class="fill"></span></div>
+    <p class="caption" aria-live="polite"></p>
+  </div>
 
   <main>
     <Hero />
@@ -81,6 +85,38 @@ import { profile } from '../content/profile';
   .mark span {
     color: var(--fg-faint);
     margin: 0 2px;
+  }
+  .demo-hud {
+    position: fixed;
+    z-index: 5;
+    display: grid;
+    gap: 10px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out);
+  }
+  .demo-hud:global(.is-on) {
+    opacity: 1;
+  }
+  .demo-hud .track {
+    height: 1px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .demo-hud .fill {
+    display: block;
+    height: 100%;
+    background: var(--fg);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+  .demo-hud .caption {
+    margin: 0;
+    min-height: 1.4em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.1rem, 0.8rem + 0.8vw, 1.6rem);
+    color: var(--fg);
   }
   .nav {
     display: flex;

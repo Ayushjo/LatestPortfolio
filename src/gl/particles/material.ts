@@ -1,4 +1,4 @@
-import { atan, float, hash, instanceIndex, length, min, mix, shapeCircle, sin, smoothstep, sqrt, vec2, vec3 } from 'three/tsl';
+import { atan, clamp, float, hash, instanceIndex, length, min, mix, shapeCircle, sin, smoothstep, sqrt, step, vec2, vec3 } from 'three/tsl';
 import { AdditiveBlending, SpriteNodeMaterial } from 'three/webgpu';
 import { lane } from './lanes';
 import type { Buffers } from './ParticleSystem';
@@ -9,6 +9,7 @@ const SILVER = vec3(0.93, 0.95, 1.0);
 /**
  * Monochrome silver: streaming particles go graphite → white with speed and stretch into
  * streaks along their velocity; formed letters are round dots with a slow diagonal sheen.
+ * During a demo, particles inside the video rectangle take the clip's colours.
  */
 export function createMaterial(b: Buffers, u: Uniforms): SpriteNodeMaterial {
   const mat = new SpriteNodeMaterial({ transparent: true, depthWrite: false, blending: AdditiveBlending });
@@ -37,7 +38,15 @@ export function createMaterial(b: Buffers, u: Uniforms): SpriteNodeMaterial {
   mat.positionNode = b.pos.toAttribute().xyz;
   mat.rotationNode = atan(V.y, V.x);
   mat.scaleNode = vec2(size.mul(stretch), size);
-  mat.colorNode = SILVER.mul(lum);
+  // Demo: inside the video rectangle each particle becomes a pixel of the playing clip.
+  const r = u.videoRect;
+  const vuv = P.xy.sub(r.xy).div(r.zw);
+  const inside = step(0, vuv.x).mul(step(vuv.x, 1)).mul(step(0, vuv.y)).mul(step(vuv.y, 1));
+  const clip = u.videoMap.sample(clamp(vuv, 0, 1)).rgb.mul(u.brightness).mul(u.videoGain);
+  const silver = SILVER.mul(lum);
+  const shown = mix(silver, clip.add(silver.mul(0.12)), u.videoMix.mul(inside));
+
+  mat.colorNode = shown.mul(mix(float(1), u.particleDim, inside));
   mat.opacityNode = shapeCircle();
   return mat;
 }

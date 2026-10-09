@@ -6,11 +6,12 @@ const DIR = join(process.cwd(), 'public', 'demos');
 
 /**
  * A project's demo clip: an explicit `demo` in projects.ts wins, otherwise any
- * public/demos/<slug>.mp4 (+ optional .jpg poster) is picked up at build time.
+ * public/demos/<slug>.mp4 (+ optional .jpg poster and .json captions) is picked up at build time.
  */
 export function demoFor(p: Project): Project['demo'] {
   if (p.demo) return p.demo;
   if (!existsSync(join(DIR, `${p.slug}.mp4`))) return undefined;
   const poster = existsSync(join(DIR, `${p.slug}.jpg`)) ? `/demos/${p.slug}.jpg` : '';
-  return { src: `/demos/${p.slug}.mp4`, poster };
+  const captions = existsSync(join(DIR, `${p.slug}.json`)) ? `/demos/${p.slug}.json` : undefined;
+  return { src: `/demos/${p.slug}.mp4`, poster, captions };
 }

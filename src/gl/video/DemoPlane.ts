@@ -1,5 +1,6 @@
-import { dot, mix, texture, uniform, uv, vec3 } from 'three/tsl';
+import { uniform, uv } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, SRGBColorSpace, Texture, VideoTexture, type Scene } from 'three/webgpu';
+import type { Uniforms } from '../particles/uniforms';
 
 export interface WorldRect {
   cx: number;
@@ -8,70 +9,75 @@ export interface WorldRect {
   h: number;
 }
 
-const SILVER = vec3(0.93, 0.95, 1.0);
-
 /**
- * A project demo playing inside the particle frame. Monochrome silver by default (the
- * post pipeline dithers it like everything else); hovering fades it to full colour.
+ * A project demo. The clip first plays *through the particles* (they sample the same
+ * texture), then this crisp, true-colour plane fades in over them.
  */
 export class DemoPlane {
-  readonly u = { opacity: uniform(0), colour: uniform(0), invert: uniform(0) };
-  private target = { opacity: 0, colour: 0 };
-  private video = document.createElement('video');
+  readonly u = { opacity: uniform(0), gain: uniform(1) };
+  readonly video = document.createElement('video');
+  private target = 0;
   private videoTexture: VideoTexture | null = null;
-  private map = texture(new Texture());
+  private placeholder = new Texture();
   private mesh: Mesh;
   private delay = 0;
   rect: WorldRect | null = null;
 
-  constructor(scene: Scene) {
+  constructor(
+    scene: Scene,
+    private shared: Uniforms,
+  ) {
     Object.assign(this.video, { muted: true, loop: true, playsInline: true, preload: 'auto' });
     this.video.setAttribute('aria-hidden', 'true');
-    this.video.addEventListener('loadeddata', () => (this.u.invert.value = averageLuma(this.video) > 0.55 ? 1 : 0));
+    // Light-UI clips are dimmed a touch so they don't glare out of the dark page.
+    this.video.addEventListener('loadeddata', () => (this.u.gain.value = averageLuma(this.video) > 0.55 ? 0.82 : 1));
 
     const mat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
-    const rgb = this.map.sample(uv()).rgb;
-    const lum = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
-    // Light-UI clips are shown inverted in silver so they sit in the dark page instead of glaring.
-    const mono = mix(lum, lum.oneMinus(), this.u.invert).pow(1.15).mul(0.8);
-    mat.colorNode = mix(SILVER.mul(mono), rgb, this.u.colour);
+    mat.colorNode = shared.videoMap.sample(uv()).rgb.mul(this.u.gain);
     mat.opacityNode = this.u.opacity;
     this.mesh = new Mesh(new PlaneGeometry(1, 1), mat);
-    this.mesh.position.z = -1;
-    this.mesh.renderOrder = -1;
+    this.mesh.position.z = 1;
+    this.mesh.renderOrder = 10;
     this.mesh.visible = false;
     scene.add(this.mesh);
   }
 
   get active() {
-    return this.target.opacity > 0;
+    return this.target > 0;
   }
 
-  /** Start a clip; it fades in once the particles have had time to form the frame. */
-  show(src: string, rect: WorldRect, delay = 0.9) {
+  /** Start a clip now (the particles show it); the crisp plane fades in after `delay` seconds. */
+  show(src: string, rect: WorldRect, delay: number) {
     this.rect = rect;
-    this.mesh.position.set(rect.cx, rect.cy, -1);
+    this.mesh.position.set(rect.cx, rect.cy, 1);
     this.mesh.scale.set(rect.w, rect.h, 1);
     if (this.video.getAttribute('src') !== src) {
       this.video.src = src;
       this.videoTexture?.dispose();
       this.videoTexture = new VideoTexture(this.video);
       this.videoTexture.colorSpace = SRGBColorSpace;
-      this.map.value = this.videoTexture;
     }
+    this.shared.videoMap.value = this.videoTexture!;
+    this.video.currentTime = 0;
     void this.video.play().catch(() => {});
     this.mesh.visible = true;
     this.delay = delay;
-    this.target.opacity = 1;
+    this.target = 1;
   }
 
   hide() {
-    this.target.opacity = 0;
-    this.target.colour = 0;
+    this.target = 0;
+    this.delay = 0;
   }
 
-  setColour(on: boolean) {
-    this.target.colour = on && this.active ? 1 : 0;
+  /** 0 → 1 as the crisp plane fades in. */
+  get crisp() {
+    return this.u.opacity.value;
+  }
+
+  get progress() {
+    const d = this.video.duration;
+    return d > 0 ? this.video.currentTime / d : 0;
   }
 
   update(dt: number) {
@@ -79,19 +85,24 @@ export class DemoPlane {
       this.delay -= dt;
       return;
     }
-    const k = 1 - Math.exp(-dt * 5);
-    this.u.opacity.value += (this.target.opacity - this.u.opacity.value) * k;
-    this.u.colour.value += (this.target.colour - this.u.colour.value) * k;
-    if (this.target.opacity === 0 && this.u.opacity.value < 0.01 && this.mesh.visible) {
+    const rate = this.target ? 2.2 : 6;
+    this.u.opacity.value += (this.target - this.u.opacity.value) * (1 - Math.exp(-dt * rate));
+    if (this.target === 0 && this.u.opacity.value < 0.01 && this.mesh.visible) {
       this.u.opacity.value = 0;
       this.mesh.visible = false;
-      this.video.pause();
-      this.video.removeAttribute('src');
-      this.video.load();
-      this.videoTexture?.dispose();
-      this.videoTexture = null;
-      this.rect = null;
     }
+  }
+
+  /** Free the clip once the particles no longer need it either. */
+  release() {
+    if (this.active || !this.videoTexture) return;
+    this.video.pause();
+    this.video.removeAttribute('src');
+    this.video.load();
+    this.shared.videoMap.value = this.placeholder;
+    this.videoTexture.dispose();
+    this.videoTexture = null;
+    this.rect = null;
   }
 
   dispose() {

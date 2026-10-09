@@ -1,5 +1,5 @@
-import { uniform } from 'three/tsl';
-import { Vector2 } from 'three/webgpu';
+import { texture, uniform } from 'three/tsl';
+import { Texture, Vector2, Vector4 } from 'three/webgpu';
 
 /** Every knob the simulation and material read. GSAP and the debug panel tween `.value` directly. */
 export function createUniforms() {
@@ -38,6 +38,14 @@ export function createUniforms() {
     shockPos: uniform(new Vector2(0, 0)),
     shockTime: uniform(-100),
     shockForce: uniform(70),
+
+    // demo video: particles inside videoRect (minX, minY, w, h) take the clip's colours
+    videoMap: texture(new Texture()),
+    videoRect: uniform(new Vector4(0, 0, 1, 1)),
+    videoMix: uniform(0),
+    videoGain: uniform(2.1),
+    /** Dims particles inside the rect once the crisp clip is shown on top of them. */
+    particleDim: uniform(1),
 
     // look
     size: uniform(0.02),
