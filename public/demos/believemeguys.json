@@ -1,0 +1,5 @@
+{ "captions": [
+  { "from": 0, "to": 2, "text": "Follow a verified trader from your own exchange account." },
+  { "from": 2, "to": 9, "text": "Their buy lands in your account automatically, sized 2× for you." },
+  { "from": 9, "to": 12, "text": "Measured live: the copy filled 0.43 s after the order went out." }
+] }
