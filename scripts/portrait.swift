@@ -30,8 +30,16 @@ mask = mask.transformed(by: CGAffineTransform(scaleX: photo.extent.width / mask.
 // 2. Grey, contrast-shaped subject on black; crop to head and shoulders.
 let grey = photo.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 0, kCIInputContrastKey: 1.25, kCIInputBrightnessKey: 0.02])
 let black = CIImage(color: .black).cropped(to: photo.extent)
-let subject = grey.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: black, kCIInputMaskImageKey: mask])
 let cropRect = CGRect(x: cx, y: photo.extent.height - cy - cs, width: cs, height: cs)
+// Soft oval vignette centred a little above the crop's middle, so shoulders dissolve instead of ending in a hard edge.
+let vignette = CIFilter.radialGradient()
+vignette.center = CGPoint(x: cropRect.midX, y: cropRect.minY + cs * 0.56)
+vignette.radius0 = Float(cs * 0.27)
+vignette.radius1 = Float(cs * 0.5)
+vignette.color0 = .white
+vignette.color1 = .black
+let fadedMask = mask.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: vignette.outputImage!.cropped(to: photo.extent)])
+let subject = grey.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: black, kCIInputMaskImageKey: fadedMask])
 
 func write(_ image: CIImage, size: Int, to path: String) {
   let scaled = image.cropped(to: cropRect)
