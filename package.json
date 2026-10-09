@@ -11,6 +11,8 @@
     "data": "node scripts/fetch-github.mjs"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
     "astro": "^7.3.7",
     "detect-gpu": "^5.0.70",
     "gsap": "^3.15.0",

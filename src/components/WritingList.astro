@@ -1,0 +1,90 @@
+---
+import { formatDate, readingMinutes, type Post } from '../lib/writing';
+
+interface Props {
+  posts: Post[];
+}
+
+const { posts } = Astro.props;
+---
+
+<ol class="posts">
+  {
+    posts.map((p) => (
+      <li>
+        <a href={`/writing/${p.id}/`}>
+          <span class="date">{formatDate(p.data.date)}</span>
+          <span class="title">
+            {p.data.title}
+            {p.data.draft && <span class="draft">draft</span>}
+          </span>
+          <span class="summary">{p.data.summary}</span>
+          <span class="mins">{readingMinutes(p.body)} min</span>
+        </a>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .posts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  a {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    gap: 6px 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    transition: padding 0.4s var(--ease-out);
+  }
+  a:hover,
+  a:focus-visible {
+    padding-left: 10px;
+  }
+  .date,
+  .mins {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-dim);
+    padding-top: 10px;
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
+    line-height: 1.05;
+  }
+  .summary {
+    grid-column: 2;
+    color: var(--fg-dim);
+    line-height: 1.5;
+  }
+  .draft {
+    margin-left: 10px;
+    padding: 2px 8px;
+    border: 1px dashed var(--fg-faint);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.66rem;
+    vertical-align: middle;
+    color: var(--fg-dim);
+  }
+  @media (max-width: 640px) {
+    a {
+      grid-template-columns: 1fr;
+    }
+    .summary {
+      grid-column: 1;
+    }
+    .date,
+    .mins {
+      padding-top: 0;
+    }
+  }
+</style>

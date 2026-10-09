@@ -320,5 +320,5 @@ const id = (s: BeatSpec) => `${s.key}@${s.side}`;
 // Safari has no requestIdleCallback.
 const hasIdle = typeof requestIdleCallback === 'function';
 const requestIdle = (fn: () => void): number =>
-  hasIdle ? requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 60);
-const cancelIdle = (h: number) => (hasIdle ? cancelIdleCallback(h) : clearTimeout(h));
+  hasIdle ? requestIdleCallback(fn, { timeout: 1500 }) : window.setTimeout(fn, 60);
+const cancelIdle = (h: number) => (hasIdle ? cancelIdleCallback(h) : window.clearTimeout(h));

@@ -1,0 +1,204 @@
+---
+import Base from './Base.astro';
+import ModeSlider from '../components/ModeSlider.astro';
+import { formatDate, readingMinutes, titleBeat, type Post } from '../lib/writing';
+import { profile } from '../content/profile';
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { title, date, summary, tags, draft } = post.data;
+---
+
+<Base title={`${title} — ${profile.name}`} description={summary}>
+  <header class="site-header">
+    <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+    <ModeSlider />
+  </header>
+
+  <canvas class="gl-canvas experience-only" data-gl aria-hidden="true"></canvas>
+
+  <main>
+    <section class="cover experience-only" data-beat={titleBeat(title)} data-side="center" data-label={title} data-group="Post" aria-hidden="true">
+      <p class="cover-meta">
+        {formatDate(date)} · {readingMinutes(post.body)} min read
+      </p>
+    </section>
+
+    <article class="post">
+      <p class="back"><a href="/writing/">← All writing</a></p>
+      {draft && <p class="draft">Draft — visible in dev only</p>}
+      <h1 class="post-title">{title}</h1>
+      <p class="meta">
+        {formatDate(date)} · {readingMinutes(post.body)} min read{tags.length > 0 && ` · ${tags.join(', ')}`}
+      </p>
+      <p class="summary">{summary}</p>
+      <div class="prose">
+        <slot />
+      </div>
+    </article>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/main';
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px var(--gutter);
+    pointer-events: none;
+  }
+  .site-header > :global(*) {
+    pointer-events: auto;
+  }
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+  .mark span {
+    color: var(--fg-faint);
+    margin: 0 2px;
+  }
+
+  .cover {
+    position: relative;
+    z-index: 1;
+    height: 92vh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 8vh;
+  }
+  .cover-meta {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+
+  /* The article sits on a solid sheet above the fixed particle canvas. */
+  .post {
+    position: relative;
+    z-index: 2;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 72px var(--gutter) 120px;
+    background: var(--bg);
+    box-shadow: 0 0 0 100vmax var(--bg);
+    clip-path: inset(0 -100vmax);
+  }
+  :global(:root[data-mode='recruiter']) .post {
+    padding-top: 120px;
+  }
+  .back {
+    margin: 0 0 28px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+  }
+  .back a {
+    text-decoration: none;
+    color: var(--fg-dim);
+  }
+  .draft {
+    display: inline-block;
+    margin: 0 0 16px;
+    padding: 4px 10px;
+    border: 1px dashed var(--fg-faint);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+  }
+  .post-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 1.6rem + 3.4vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .meta {
+    margin: 16px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-dim);
+  }
+  .summary {
+    margin: 22px 0 0;
+    font-size: var(--step-1);
+    line-height: 1.4;
+  }
+
+  .prose {
+    margin-top: 40px;
+    font-size: 1.08rem;
+    line-height: 1.75;
+    color: color-mix(in srgb, var(--fg) 88%, var(--bg));
+  }
+  .prose :global(h2) {
+    margin: 2.4em 0 0.6em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--fg);
+  }
+  .prose :global(h3) {
+    margin: 2em 0 0.5em;
+    font-size: 1.2rem;
+    color: var(--fg);
+  }
+  .prose :global(a) {
+    color: var(--fg);
+    text-underline-offset: 3px;
+  }
+  .prose :global(strong) {
+    color: var(--fg);
+  }
+  .prose :global(blockquote) {
+    margin: 1.6em 0;
+    padding: 2px 0 2px 20px;
+    border-left: 1px solid var(--fg-faint);
+    color: var(--fg-dim);
+  }
+  .prose :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+  .prose :global(:not(pre) > code) {
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .prose :global(pre) {
+    margin: 1.6em 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-left: 1.2em;
+  }
+  .prose :global(li + li) {
+    margin-top: 0.4em;
+  }
+</style>

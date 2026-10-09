@@ -1,0 +1,87 @@
+---
+import Base from '../../layouts/Base.astro';
+import ModeSlider from '../../components/ModeSlider.astro';
+import WritingList from '../../components/WritingList.astro';
+import { getPosts } from '../../lib/writing';
+import { profile } from '../../content/profile';
+
+const posts = await getPosts();
+---
+
+<Base title={`Writing — ${profile.name}`} description="Notes on systems, storage engines, proxies and agents.">
+  <header class="site-header">
+    <a class="mark" href="/" aria-label={`${profile.name} — home`}>AS<span>/</span>26</a>
+    <ModeSlider />
+  </header>
+  <main class="writing">
+    <p class="eyebrow">Writing</p>
+    <h1>Notes from the stream.</h1>
+    <p class="lede">On systems, storage engines, proxies and agents — what I built, and what it taught me.</p>
+    {posts.length > 0 ? <WritingList posts={posts} /> : <p class="empty">First post coming soon.</p>}
+    <p class="rss"><a href="/rss.xml">RSS feed</a></p>
+  </main>
+</Base>
+
+<script>
+  import { initSlider } from '../../scripts/slider';
+  const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
+  if (slider) initSlider(slider);
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px var(--gutter);
+  }
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+  .mark span {
+    color: var(--fg-faint);
+    margin: 0 2px;
+  }
+  .writing {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 22vh var(--gutter) 120px;
+  }
+  .eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  h1 {
+    margin: 12px 0 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3rem, 1.6rem + 5vw, 6rem);
+    line-height: 0.95;
+  }
+  .lede {
+    margin: 18px 0 48px;
+    max-width: 46ch;
+    font-size: var(--step-1);
+    color: var(--fg-dim);
+  }
+  .empty,
+  .rss {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--fg-dim);
+  }
+  .rss {
+    margin-top: 32px;
+  }
+</style>

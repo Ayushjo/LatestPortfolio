@@ -1,0 +1,72 @@
+---
+import WritingList from './WritingList.astro';
+import { getPosts } from '../lib/writing';
+
+const posts = (await getPosts()).slice(0, 3);
+---
+
+{
+  posts.length > 0 && (
+    <section class="writing" id="writing" data-beat="stream" data-label="Writing" data-group="Writing" aria-labelledby="writing-title">
+      <div class="inner">
+        <p class="eyebrow">Writing</p>
+        <h2 id="writing-title">Notes from the stream.</h2>
+        <WritingList posts={posts} />
+        <p class="all">
+          <a href="/writing/">All writing →</a>
+        </p>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .writing {
+    position: relative;
+    z-index: 1;
+    min-height: 110vh;
+    display: flex;
+    align-items: center;
+    padding: 14vh var(--gutter);
+  }
+  .inner {
+    width: min(100%, 880px);
+    margin: 0 auto;
+    padding: 36px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  h2 {
+    margin: 10px 0 28px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 1.4rem + 2.6vw, 3.8rem);
+    line-height: 1;
+  }
+  .all {
+    margin: 22px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+  .all a {
+    text-decoration: none;
+    border-bottom: 1px solid var(--fg-faint);
+  }
+  @media (max-width: 640px) {
+    .inner {
+      padding: 22px;
+    }
+  }
+</style>
