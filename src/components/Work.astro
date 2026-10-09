@@ -1,6 +1,7 @@
 ---
 import Tone from './Tone.astro';
 import { featured } from '../content/projects';
+import { demoFor } from '../lib/demos';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const total = pad(featured.length);
@@ -24,7 +25,9 @@ const total = pad(featured.length);
   </header>
 
   {
-    featured.map((p, i) => (
+    featured.map((p, i) => {
+      const demo = demoFor(p);
+      return (
       <article
         class:list={['chapter', i % 2 === 0 ? 'text-left' : 'text-right']}
         data-beat={p.slug}
@@ -59,14 +62,14 @@ const total = pad(featured.length);
                 <li>{t}</li>
               ))}
             </ul>
-            {(p.links.length > 0 || p.demo) && (
+            {(p.links.length > 0 || demo) && (
               <p class="actions">
-                {p.demo && (
+                {demo && (
                   <button
                     type="button"
                     class="pill demo-btn"
                     data-demo={p.slug}
-                    data-src={p.demo.src}
+                    data-src={demo.src}
                     data-side={i % 2 === 0 ? 'right' : 'left'}
                     aria-pressed="false"
                   >
@@ -81,13 +84,14 @@ const total = pad(featured.length);
                 ))}
               </p>
             )}
-            {p.demo && (
-              <video class="inline-demo" data-inline-demo={p.slug} poster={p.demo.poster} muted loop playsinline preload="none" hidden />
+            {demo && (
+              <video class="inline-demo" data-inline-demo={p.slug} poster={demo.poster || undefined} muted loop playsinline preload="none" hidden />
             )}
           </div>
         </div>
       </article>
-    ))
+      );
+    })
   }
 </section>
 

@@ -63,12 +63,9 @@ Add `?debug` to the URL for a live tweak panel of every shader uniform, or `?gl=
 
 A project with a `demo` plays it *inside the particles*. On wide screens, once a chapter has been held for about 1.5 s (or the visitor presses **▶ Demo**), the shape morphs into a glowing frame and the clip fades in. It's silver by default, and full colour on hover. Phones get an inline video in the panel instead.
 
-1. Drop the files in `public/demos/<slug>.mp4` and `public/demos/<slug>.jpg` (the poster frame).
-2. Add the clip to the project in `src/content/projects.ts`:
+Drop `public/demos/<slug>.mp4` (and optionally `<slug>.jpg` as the poster frame) and rebuild; the site picks it up automatically. An explicit `demo` field in `src/content/projects.ts` overrides that.
 
-   ```ts
-   demo: { src: '/demos/<slug>.mp4', poster: '/demos/<slug>.jpg' }
-   ```
+To record clips, paste the prompt in [`docs/demo-video-prompt.md`](docs/demo-video-prompt.md) into Claude Code inside each project's folder.
 
 **Recording spec:**
 - An 8–15 s silent loop.

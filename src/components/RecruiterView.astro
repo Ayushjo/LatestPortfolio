@@ -3,271 +3,647 @@ import { profile } from '../content/profile';
 import { projects } from '../content/projects';
 import { experience } from '../content/experience';
 import github from '../data/github.json';
+import { formatDate, getPosts } from '../lib/writing';
+import { demoFor } from '../lib/demos';
 
 const work = experience.filter((r) => r.kind === 'work');
 const education = experience.filter((r) => r.kind === 'education');
+const merged = github.prs.merged;
+const posts = (await getPosts()).slice(0, 3);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+/** Bold the numbers in a line so a skim catches the impact (escapes HTML first). */
+const emphasize = (text: string) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(
+      /(?<![A-Za-z\d\-])([~−]?\$?\d[\d,.]*(?:[–-]\d[\d,.]*)?(?:\s?(?:%|ms|µs|ns|k\+?|M|×|\+))?(?:\s?(?:req|writes|items)\/s(?:ec)?)?)(?![A-Za-z\d])/g,
+      '<strong>$1</strong>',
+    );
+
+const glance = [
+  { value: '36k+', label: 'users on a platform I built and run' },
+  { value: '~70k', label: 'req/s from my Rust proxy, ~1% off nginx' },
+  { value: String(merged.length), label: `merged open-source PRs, ${merged.filter((p) => p.repo === 'FreeCAD/FreeCAD').length} into FreeCAD` },
+  { value: fmt(github.calendar.total), label: 'GitHub contributions this year' },
+];
 ---
 
 <article class="resume recruiter-only" aria-labelledby="resume-name">
-  <header class="resume-head">
-    <div>
+  <p class="switch">
+    The quick version. <button type="button" data-set-mode="immersive">See the full experience →</button>
+  </p>
+
+  <header class="card head">
+    <div class="who">
+      <p class="status"><span class="dot" aria-hidden="true"></span> Open to opportunities</p>
       <h1 id="resume-name">{profile.name}</h1>
-      <p class="role">{profile.role} · {profile.location}</p>
+      <p class="role">Backend & systems engineer — TypeScript, Node.js, Rust, Python</p>
+      <p class="where">{profile.location} · IST (UTC+5:30) · B.Tech, graduating May 2028</p>
     </div>
-    <ul class="contact">
-      <li><a href={`mailto:${profile.email}`}>{profile.email}</a></li>
-      <li><a href={profile.links.github}>GitHub</a></li>
-      <li><a href={profile.links.linkedin}>LinkedIn</a></li>
-      <li><a href={profile.links.resume}>Résumé (PDF)</a></li>
-    </ul>
+    <div class="cta">
+      <a class="btn primary" href={`mailto:${profile.email}`}>Email me</a>
+      <a class="btn" href={profile.links.resume} target="_blank" rel="noopener">Résumé PDF ↗</a>
+      <a class="btn" href={profile.links.github} target="_blank" rel="noopener">GitHub ↗</a>
+      <a class="btn" href={profile.links.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+    </div>
+    <p class="summary">{profile.bio.recruiter}</p>
   </header>
 
-  <section aria-labelledby="summary-h">
-    <h2 id="summary-h">Summary</h2>
-    <p>{profile.bio.recruiter}</p>
-  </section>
+  <ul class="glance" aria-label="At a glance">
+    {
+      glance.map((g) => (
+        <li>
+          <span class="value">{g.value}</span>
+          <span class="label">{g.label}</span>
+        </li>
+      ))
+    }
+  </ul>
 
-  {
-    work.length > 0 && (
+  <div class="grid">
+    <div class="main">
       <section aria-labelledby="exp-h">
         <h2 id="exp-h">Experience</h2>
-        {work.map((r) => (
-          <div class="item">
-            <div class="item-head">
-              <h3>
-                {r.title} — {r.company}
-              </h3>
-              <span class="when">{r.period}</span>
+        <ol class="timeline">
+          {
+            work.map((r) => (
+              <li class="role-item">
+                <div class="role-head">
+                  <h3>
+                    {r.company} <span class="title">· {r.title}</span>
+                  </h3>
+                  <span class="when">{r.period}</span>
+                </div>
+                {r.product && <p class="product">{r.product}</p>}
+                <ul class="points">
+                  {r.points.map((pt) => (
+                    <li set:html={emphasize(pt)} />
+                  ))}
+                </ul>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+
+      <section aria-labelledby="proj-h">
+        <h2 id="proj-h">Projects</h2>
+        <ul class="projects">
+          {
+            projects.map((p) => (
+              <li class:list={['project', p.tier === 'featured' && 'featured']}>
+                <div class="project-head">
+                  <h3>{p.name}</h3>
+                  {p.role && <span class="badge">{p.role.split(' — ')[0]}</span>}
+                </div>
+                <p class="tagline">{p.tagline}</p>
+                <ul class="stats">
+                  {p.stats.slice(0, 3).map((s) => (
+                    <li>
+                      <strong>{s.value}</strong> {s.label}
+                    </li>
+                  ))}
+                </ul>
+                <p class="tags">{p.tags.join(' · ')}</p>
+                {(p.links.length > 0 || demoFor(p)) && (
+                  <p class="links">
+                    {p.links.map((l) => (
+                      <a href={l.href} target="_blank" rel="noopener">
+                        {l.label} ↗
+                      </a>
+                    ))}
+                    {demoFor(p) && (
+                      <a href={demoFor(p)!.src} target="_blank" rel="noopener">
+                        ▶ Demo
+                      </a>
+                    )}
+                  </p>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+    </div>
+
+    <aside class="side">
+      <section class="card" aria-labelledby="skills-h">
+        <h2 id="skills-h">Skills</h2>
+        {
+          Object.entries(profile.skills).map(([group, list]) => (
+            <div class="skill-group">
+              <h3>{group}</h3>
+              <ul class="chips">
+                {list.map((s) => (
+                  <li>{s}</li>
+                ))}
+              </ul>
             </div>
-            {r.product && <p class="role-line">{r.product}</p>}
-            <ul>
-              {r.points.map((p) => (
-                <li>{p}</li>
+          ))
+        }
+      </section>
+
+      <section class="card" aria-labelledby="oss-h">
+        <h2 id="oss-h">Open source</h2>
+        <ul class="prs">
+          {
+            merged.map((p) => (
+              <li>
+                <a href={p.url} target="_blank" rel="noopener">
+                  <span class="repo">
+                    {p.repo}#{p.number}
+                  </span>
+                  <span class="pr-title">{p.title}</span>
+                  <span class="diff">
+                    +{p.additions} −{p.deletions} · merged {p.mergedAt.slice(0, 10)}
+                  </span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="note">{github.prs.open.length} more in review</p>
+      </section>
+
+      <section class="card" aria-labelledby="edu-h">
+        <h2 id="edu-h">Education</h2>
+        {
+          education.map((r) => (
+            <div class="edu">
+              <h3>{r.company}</h3>
+              <p>{r.title}</p>
+              <p class="when">{r.period}</p>
+              {r.product && <p class="note">{r.product}</p>}
+            </div>
+          ))
+        }
+      </section>
+
+      {
+        posts.length > 0 && (
+          <section class="card" aria-labelledby="writing-h">
+            <h2 id="writing-h">Writing</h2>
+            <ul class="prs">
+              {posts.map((p) => (
+                <li>
+                  <a href={`/writing/${p.id}/`}>
+                    <span class="pr-title">{p.data.title}</span>
+                    <span class="diff">{formatDate(p.data.date)}</span>
+                  </a>
+                </li>
               ))}
             </ul>
-          </div>
-        ))}
-      </section>
-    )
-  }
-
-  <section aria-labelledby="proj-h">
-    <h2 id="proj-h">Projects</h2>
-    {
-      projects.map((p) => (
-        <div class="item">
-          <div class="item-head">
-            <h3>{p.name}</h3>
-            <span class="when">{p.tags.join(' · ')}</span>
-          </div>
-          {p.role && <p class="role-line">{p.role}</p>}
-          <p>{p.summary}</p>
-          <ul class="metrics">
-            {p.metrics.map((m) => (
-              <li>{m}</li>
-            ))}
-          </ul>
-          {p.links.length > 0 && (
-            <p class="proj-links">
-              {p.links.map((l) => (
-                <a href={l.href}>{l.label}</a>
-              ))}
-            </p>
-          )}
-        </div>
-      ))
-    }
-  </section>
-
-  {
-    education.length > 0 && (
-      <section aria-labelledby="edu-h">
-        <h2 id="edu-h">Education</h2>
-        {education.map((r) => (
-          <div class="item">
-            <div class="item-head">
-              <h3>{r.company}</h3>
-              <span class="when">{r.period}</span>
-            </div>
-            <p>
-              {r.title}
-              {r.product && ` · ${r.product}`}
-            </p>
-          </div>
-        ))}
-      </section>
-    )
-  }
-
-  <section aria-labelledby="oss-h">
-    <h2 id="oss-h">Open source</h2>
-    {
-      github.prs.merged.map((p) => (
-        <div class="item">
-          <div class="item-head">
-            <h3>
-              <a href={p.url}>{p.repo}#{p.number}</a>
-            </h3>
-            <span class="when">
-              +{p.additions} −{p.deletions} · merged {p.mergedAt.slice(0, 10)}
-            </span>
-          </div>
-          <p>{p.title}</p>
-        </div>
-      ))
-    }
-    <p class="role-line">
-      {github.prs.open.length} more in review · {github.calendar.total.toLocaleString('en-US')} GitHub contributions in the last year
-    </p>
-  </section>
-
-  <section aria-labelledby="skills-h">
-    <h2 id="skills-h">Skills</h2>
-    <dl class="skills">
-      {
-        Object.entries(profile.skills).map(([group, list]) => (
-          <div>
-            <dt>{group}</dt>
-            <dd>{list.join(', ')}</dd>
-          </div>
-        ))
+          </section>
+        )
       }
-    </dl>
-  </section>
+    </aside>
+  </div>
 </article>
 
 <style>
   .resume {
     position: relative;
     z-index: 1;
-    max-width: 780px;
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 120px var(--gutter) 96px;
-    font-size: var(--step-0);
+    padding: 96px var(--gutter) 96px;
+    font-size: 0.98rem;
     line-height: 1.6;
   }
-  .resume-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 24px;
-    flex-wrap: wrap;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--line);
+
+  .switch {
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-dim);
+  }
+  .switch button {
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--fg-faint);
+    background: none;
+    font: inherit;
+    color: var(--fg);
+    cursor: pointer;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--bg-raised);
+  }
+
+  .head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px 40px;
+    padding: 36px;
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    padding: 4px 12px 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg);
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #2f9e5b;
+    box-shadow: 0 0 0 3px rgba(47, 158, 91, 0.18);
   }
   h1 {
     margin: 0;
-    font-size: var(--step-2);
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.8rem, 2rem + 3vw, 4.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
   }
   .role {
+    margin: 10px 0 0;
+    font-size: 1.12rem;
+    font-weight: 500;
+  }
+  .where {
     margin: 4px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
     color: var(--fg-dim);
   }
-  .contact {
+  .cta {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-width: 200px;
+  }
+  .btn {
+    display: block;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-align: center;
+    text-decoration: none;
+    transition:
+      border-color 0.25s var(--ease-out),
+      background-color 0.25s var(--ease-out);
+  }
+  .btn:hover {
+    border-color: var(--fg);
+  }
+  .btn.primary {
+    background: var(--fg);
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+  .summary {
+    grid-column: 1 / -1;
+    margin: 0;
+    max-width: 72ch;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    color: var(--fg-dim);
+    font-size: 1.04rem;
+  }
+
+  .glance {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--line);
+  }
+  .glance li {
+    display: grid;
+    gap: 4px;
+    padding: 20px 22px;
+    background: var(--bg-raised);
+  }
+  .glance .value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 2.3rem;
+    line-height: 1;
+  }
+  .glance .label {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--fg-dim);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 40px;
+    margin-top: 44px;
+    align-items: start;
+  }
+  .side {
+    display: grid;
+    gap: 16px;
+    position: sticky;
+    top: 84px;
+  }
+  .side .card {
+    padding: 22px 24px;
+  }
+
+  h2 {
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .main section + section {
+    margin-top: 48px;
+  }
+
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--line);
+  }
+  .role-item {
+    position: relative;
+    padding: 0 0 30px 26px;
+  }
+  .role-item::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 9px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--fg);
+  }
+  .role-item:last-child {
+    padding-bottom: 0;
+  }
+  .role-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px 16px;
+  }
+  .role-head h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.75rem;
+    line-height: 1.1;
+  }
+  .role-head .title {
+    font-family: var(--font-display);
+    font-style: normal;
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: var(--fg-dim);
+  }
+  .when {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-dim);
+    white-space: nowrap;
+  }
+  .product {
+    margin: 2px 0 0;
+    font-size: 0.9rem;
+    color: var(--fg-dim);
+  }
+  .points {
+    margin: 12px 0 0;
+    padding-left: 18px;
+    display: grid;
+    gap: 6px;
+  }
+  .points :global(strong),
+  .stats strong {
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .projects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .project {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-raised);
+  }
+  .project-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .project h3 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+  .badge {
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--fg-dim);
+  }
+  .tagline {
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .stats {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 3px;
+    font-size: 0.86rem;
+    color: var(--fg-dim);
+  }
+  .tags {
+    margin: 4px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--fg-dim);
+  }
+  .links {
+    margin: 2px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+  }
+  .links a,
+  .prs a {
+    text-decoration: none;
+  }
+  .links a {
+    border-bottom: 1px solid var(--line);
+  }
+  .links a:hover {
+    border-color: var(--fg);
+  }
+
+  .skill-group + .skill-group {
+    margin-top: 14px;
+  }
+  .skill-group h3,
+  .edu h3 {
+    margin: 0 0 6px;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+  .chips {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
+    gap: 5px;
   }
-  .contact a,
-  .proj-links a,
-  h3 a {
-    text-decoration: none;
-    border-bottom: 1px solid var(--line);
-  }
-  .contact a:hover,
-  .proj-links a:hover {
-    border-color: var(--fg);
-  }
-  .role-line {
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
+  .chips li {
+    padding: 2px 9px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.78rem;
     color: var(--fg-dim);
   }
-  .item .proj-links {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-  }
-  section {
-    padding-top: 32px;
-  }
-  h2 {
-    margin: 0 0 12px;
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--fg-dim);
-  }
-  .item {
-    padding: 14px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .item:last-child {
-    border-bottom: 0;
-  }
-  .item-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  h3 {
+  .prs {
+    list-style: none;
     margin: 0;
-    font-size: var(--step-1);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  .when {
-    font-family: var(--font-mono);
-    font-size: var(--step--1);
-    color: var(--fg-dim);
-  }
-  .item p {
-    margin: 6px 0;
-  }
-  .metrics {
-    margin: 4px 0 0;
-    padding-left: 18px;
-    color: var(--fg-dim);
-  }
-  .skills {
-    margin: 0;
+    padding: 0;
     display: grid;
-    gap: 8px;
+    gap: 2px;
   }
-  .skills div {
+  .prs a {
     display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 16px;
+    gap: 1px;
+    padding: 9px 10px;
+    margin: 0 -10px;
+    border-radius: 10px;
+    transition: background-color 0.2s var(--ease-out);
   }
-  .skills dt {
-    font-weight: 500;
+  .prs a:hover {
+    background: color-mix(in srgb, var(--fg) 6%, transparent);
   }
-  .skills dd {
-    margin: 0;
+  .repo,
+  .diff {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
     color: var(--fg-dim);
   }
-  @media (max-width: 560px) {
-    .skills div {
+  .pr-title {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .note {
+    margin: 10px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+  }
+  .edu p {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  @media (max-width: 920px) {
+    .grid {
       grid-template-columns: 1fr;
-      gap: 0;
+    }
+    .side {
+      position: static;
+    }
+    .glance {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
+  @media (max-width: 640px) {
+    .head {
+      grid-template-columns: 1fr;
+      padding: 24px;
+    }
+    .cta {
+      grid-template-columns: 1fr 1fr;
+    }
+    .projects {
+      grid-template-columns: 1fr;
+    }
+    .glance .value {
+      font-size: 1.9rem;
+    }
+  }
+
   @media print {
     .resume {
-      padding-top: 0;
+      max-width: none;
+      padding: 0;
+      font-size: 10.5pt;
+    }
+    .switch,
+    .cta {
+      display: none;
+    }
+    .card,
+    .project,
+    .glance,
+    .glance li {
+      border-color: #ccc;
+      background: none;
+    }
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    .side {
+      position: static;
+      grid-template-columns: 1fr 1fr;
+    }
+    .project,
+    .role-item,
+    .side .card {
+      break-inside: avoid;
     }
   }
 </style>
