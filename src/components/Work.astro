@@ -59,14 +59,30 @@ const total = pad(featured.length);
                 <li>{t}</li>
               ))}
             </ul>
-            {p.links.length > 0 && (
+            {(p.links.length > 0 || p.demo) && (
               <p class="actions">
+                {p.demo && (
+                  <button
+                    type="button"
+                    class="pill demo-btn"
+                    data-demo={p.slug}
+                    data-src={p.demo.src}
+                    data-side={i % 2 === 0 ? 'right' : 'left'}
+                    aria-pressed="false"
+                  >
+                    <span class="when-off">▶ Demo</span>
+                    <span class="when-on">◼ Shape</span>
+                  </button>
+                )}
                 {p.links.map((l) => (
                   <a class="pill" href={l.href} target="_blank" rel="noopener">
                     {l.label} <span aria-hidden="true">↗</span>
                   </a>
                 ))}
               </p>
+            )}
+            {p.demo && (
+              <video class="inline-demo" data-inline-demo={p.slug} poster={p.demo.poster} muted loop playsinline preload="none" hidden />
             )}
           </div>
         </div>
@@ -285,6 +301,35 @@ const total = pad(featured.length);
   .pill:focus-visible {
     background: var(--fg);
     color: var(--bg);
+  }
+  .demo-btn {
+    cursor: pointer;
+    background: none;
+  }
+  .demo-btn .when-on,
+  .demo-btn[aria-pressed='true'] .when-off {
+    display: none;
+  }
+  .demo-btn[aria-pressed='true'] .when-on {
+    display: inline;
+  }
+  .inline-demo {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-raised);
+    filter: grayscale(1) contrast(1.05);
+    transition: filter 0.5s var(--ease-out);
+  }
+  .inline-demo:hover,
+  .inline-demo:active {
+    filter: none;
+  }
+  .inline-demo[hidden] {
+    display: none;
   }
 
   /* Tall screens: the shape floats in the top half, the story sits below it. */

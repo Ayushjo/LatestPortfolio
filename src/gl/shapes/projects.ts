@@ -1,5 +1,8 @@
 import { circle, fillRect, line, ring, rng, squarify, tone, type ShapeDef } from './draw';
 
+/** Demo frame geometry, shared with the video plane so the clip sits exactly inside it. */
+export const FRAME = { width: 1600, height: 1000, inset: 24, video: 40 } as const;
+
 /** One signature shape per project, keyed by project slug. */
 export const PROJECT_SHAPES: Record<string, ShapeDef> = {
   /** Orchestrator at the centre, specialists in orbit, the agent factory hiring a new one. */
@@ -286,6 +289,30 @@ export const PROJECT_SHAPES: Record<string, ShapeDef> = {
       circle(ctx, 230, 60, 14);
       circle(ctx, 770, 60, 14);
       for (let y = 470; y < 680; y += 46) circle(ctx, 500, y, 9);
+    },
+  },
+
+  /** The demo screen: a 16:10 frame with bright corner brackets. Video plays inside it. */
+  frame: {
+    width: FRAME.width,
+    height: FRAME.height,
+    draw(ctx) {
+      const { width: w, height: h, inset: i } = FRAME;
+      ctx.save();
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.roundRect(i, i, w - i * 2, h - i * 2, 18);
+      ctx.stroke();
+      ctx.restore();
+      const L = 90;
+      for (const [x, y, dx, dy] of [
+        [i, i, 1, 1],
+        [w - i, i, -1, 1],
+        [i, h - i, 1, -1],
+        [w - i, h - i, -1, -1],
+      ] as const) {
+        line(ctx, [[x, y + dy * L], [x, y], [x + dx * L, y]], 16);
+      }
     },
   },
 };

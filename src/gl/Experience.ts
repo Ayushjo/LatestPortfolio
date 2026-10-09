@@ -6,6 +6,9 @@ import { createPipeline, type Pipeline } from './post/pipeline';
 import type { Quality } from './quality';
 import { createRenderer } from './renderer';
 import { StreamScene, type BeatSpec, type StreamHooks } from './scenes/StreamScene';
+import { FRAME } from './shapes/projects';
+import { DemoPlane } from './video/DemoPlane';
+import type { ShapeSide } from '../scripts/scroll';
 import type { View } from './scenes/Scene';
 
 export interface ExperienceHooks extends StreamHooks {
@@ -26,6 +29,7 @@ export class Experience {
   private input = new Input();
   readonly stream: StreamScene;
   private post: Pipeline;
+  private demo: DemoPlane;
   private disposed = false;
   private frameTimes: number[] = [];
   private bootTime = performance.now();
@@ -40,6 +44,7 @@ export class Experience {
   ) {
     this.stream = new StreamScene(renderer, quality, this.input, beats, hooks, calm);
     this.post = createPipeline(renderer, this.stream.root, this.camera, quality, this.stream.u.time);
+    this.demo = new DemoPlane(this.stream.root);
   }
 
   static async boot(
@@ -61,6 +66,36 @@ export class Experience {
     return exp;
   }
 
+  /** Particles form a screen frame on `side`, then the clip fades in inside it. */
+  showDemo(src: string, side: ShapeSide): void {
+    const view = currentView();
+    const p = this.stream.placement(side, view);
+    const s = Math.min(p.maxWidth / FRAME.width, p.maxHeight / FRAME.height);
+    const h = (FRAME.height - FRAME.video * 2) * s;
+    this.stream.setOverride({ key: 'frame', side });
+    this.demo.show(src, { cx: p.centerX, cy: p.centerY, w: h * 1.6, h });
+  }
+
+  hideDemo(): void {
+    if (!this.demo.active) return;
+    this.demo.hide();
+    this.stream.setOverride(null);
+  }
+
+  setDemoColour(on: boolean): void {
+    this.demo.setColour(on);
+  }
+
+  /** The playing clip's rectangle in CSS pixels, for hover tests. */
+  demoScreenRect(): DOMRect | null {
+    const r = this.demo.rect;
+    if (!r || !this.demo.active) return null;
+    const view = currentView();
+    const toX = (x: number) => (x / view.halfW + 1) * 0.5 * innerWidth;
+    const toY = (y: number) => (1 - (y / view.halfH + 1) * 0.5) * innerHeight;
+    return new DOMRect(toX(r.cx - r.w / 2), toY(r.cy + r.h / 2), (r.w / (2 * view.halfW)) * innerWidth, (r.h / (2 * view.halfH)) * innerHeight);
+  }
+
   /**
    * Dev only: fast-forward the timelines and simulation at a fixed step, then draw once.
    * Lets headless/hidden previews (where requestAnimationFrame is paused) be inspected.
@@ -78,6 +113,7 @@ export class Experience {
       this.stream.timeline.time(this.simTime);
       this.input.update(dt);
       this.stream.update(this.simTime, dt, progress);
+      this.stepDemo(dt);
     }
     this.post.pipeline.render();
   }
@@ -100,6 +136,7 @@ export class Experience {
     gsap.ticker.remove(this.tick);
     window.removeEventListener('resize', this.onResize);
     this.gui?.destroy();
+    this.demo.dispose();
     this.stream.dispose();
     this.input.dispose();
     this.post.pipeline.dispose();
@@ -111,9 +148,18 @@ export class Experience {
     const dt = deltaMs / 1000;
     this.input.update(dt);
     this.stream.update(time, dt, progress);
+    this.stepDemo(dt);
     this.post.pipeline.render();
     this.watchFrameRate(deltaMs);
   };
+
+  private stepDemo(dt: number) {
+    this.demo.update(dt);
+    const pu = this.post.uniforms;
+    pu.clearAmt.value = this.demo.u.colour.value;
+    const r = this.demoScreenRect();
+    if (r) pu.clearRect.value.set(r.left / innerWidth, r.top / innerHeight, r.right / innerWidth, r.bottom / innerHeight);
+  }
 
   private watchFrameRate(deltaMs: number) {
     if (this.slowReported || performance.now() - this.bootTime < 4000) return;

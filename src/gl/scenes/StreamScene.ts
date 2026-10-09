@@ -243,7 +243,7 @@ export class StreamScene implements Scene {
   }
 
   /** Shapes sit opposite their story on wide screens, above it on tall ones. */
-  private placement(side: ShapeSide, view: View): Placement {
+  placement(side: ShapeSide, view: View): Placement {
     const wide = view.halfW / view.halfH > 1.15;
     if (!wide) return { centerX: 0, centerY: view.halfH * 0.42, maxWidth: view.halfW * 1.7, maxHeight: view.halfH * 0.72 };
     if (side === 'center')
