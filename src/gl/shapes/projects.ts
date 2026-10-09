@@ -3,67 +3,178 @@ import { circle, fillRect, line, ring, rng, squarify, tone, type ShapeDef } from
 
 /** One signature shape per project, keyed by project slug. */
 export const PROJECT_SHAPES: Record<string, ShapeDef> = {
-  /** Orchestrator at the centre, specialists in orbit, the agent factory hiring a new one. */
+  /**
+   * The shop owner talks (speech bubble rising from his shopfront) → the orchestrator →
+   * specialists: ₹ payments, the ledger, sourcing, and the agent factory hiring (dashed gear).
+   */
   sahaayak: {
     width: 1000,
-    height: 1000,
+    height: 900,
     draw(ctx) {
-      const c = 500;
-      ring(ctx, c, c, 300, 6, [2, 22]);
-      ring(ctx, c, c, 440, 4, [2, 34]);
-      const specialists = [-90, 30, 150].map((d) => (d * Math.PI) / 180);
-      for (const a of specialists) {
-        const x = c + Math.cos(a) * 300;
-        const y = c + Math.sin(a) * 300;
-        line(ctx, [[c, c], [x, y]], 16);
-        circle(ctx, x, y, 66);
+      const hub = { x: 500, y: 330 };
+      const agents: [number, number][] = [
+        [140, 170],
+        [380, 105],
+        [620, 105],
+        [860, 170],
+      ];
+      for (const [x, y] of agents) line(ctx, [[hub.x, hub.y], [x, y]], 8);
+      line(ctx, [[hub.x, hub.y + 40], [hub.x, 440]], 8);
+      ring(ctx, hub.x, hub.y, 64, 6);
+      circle(ctx, hub.x, hub.y, 40);
+
+      // Agents, each with its job as a glyph.
+      for (const [i, [x, y]] of agents.entries()) {
+        ctx.globalCompositeOperation = 'destination-out';
+        circle(ctx, x, y, 62);
+        ctx.globalCompositeOperation = 'source-over';
+        ring(ctx, x, y, 62, 10, i === 3 ? [16, 12] : []);
       }
-      // Nirmata, the factory, and the specialist it is spinning up (dashed: being hired).
-      const fa = (-30 * Math.PI) / 180;
-      const fx = c + Math.cos(fa) * 300;
-      const fy = c + Math.sin(fa) * 300;
-      line(ctx, [[c, c], [fx, fy]], 16);
-      ctx.fillStyle = tone(ctx, 0.5);
-      circle(ctx, fx, fy, 66);
-      ctx.fillStyle = '#fff';
-      ring(ctx, fx, fy, 66, 10);
-      const na = (-55 * Math.PI) / 180;
-      const nx = c + Math.cos(na) * 440;
-      const ny = c + Math.sin(na) * 440;
-      line(ctx, [[fx, fy], [nx, ny]], 8, [14, 14]);
-      ring(ctx, nx, ny, 44, 9, [16, 12]);
-      circle(ctx, c, c, 128);
       ctx.globalCompositeOperation = 'destination-out';
-      circle(ctx, c, c, 70);
+      for (const [x, y] of agents) circle(ctx, x, y, 56);
       ctx.globalCompositeOperation = 'source-over';
-      circle(ctx, c, c, 34);
+      // ₹ — payments (Vasool)
+      ctx.font = '900 78px "Inter Tight", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('₹', agents[0]![0], agents[0]![1] + 4);
+      // Ledger — cash flow (Khata)
+      {
+        const [x, y] = agents[1]!;
+        ctx.save();
+        ctx.lineWidth = 7;
+        ctx.strokeRect(x - 26, y - 32, 52, 64);
+        ctx.restore();
+        for (const dy of [-14, 0, 14]) line(ctx, [[x - 14, y + dy], [x + 14, y + dy]], 5);
+      }
+      // Box — sourcing (Sourcer)
+      {
+        const [x, y] = agents[2]!;
+        ctx.save();
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 30);
+        ctx.lineTo(x + 30, y - 14);
+        ctx.lineTo(x + 30, y + 20);
+        ctx.lineTo(x, y + 36);
+        ctx.lineTo(x - 30, y + 20);
+        ctx.lineTo(x - 30, y - 14);
+        ctx.closePath();
+        ctx.moveTo(x - 30, y - 14);
+        ctx.lineTo(x, y + 2);
+        ctx.lineTo(x + 30, y - 14);
+        ctx.moveTo(x, y + 2);
+        ctx.lineTo(x, y + 36);
+        ctx.stroke();
+        ctx.restore();
+      }
+      // Gear — the agent factory (Nirmata)
+      {
+        const [x, y] = agents[3]!;
+        for (let t = 0; t < 8; t++) {
+          const a = (t / 8) * Math.PI * 2;
+          line(ctx, [[x + Math.cos(a) * 20, y + Math.sin(a) * 20], [x + Math.cos(a) * 36, y + Math.sin(a) * 36]], 11);
+        }
+        ring(ctx, x, y, 22, 9);
+      }
+
+      // The owner's message.
+      ctx.save();
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.roundRect(380, 440, 240, 92, 26);
+      ctx.moveTo(452, 532);
+      ctx.lineTo(438, 578);
+      ctx.lineTo(492, 532);
+      ctx.stroke();
+      ctx.restore();
+      for (const dx of [-44, 0, 44]) circle(ctx, 500 + dx, 486, 11);
+
+      // His shop: striped, scalloped awning over a counter and a door.
+      const ax = 300;
+      const aw = 400;
+      const stripes = 8;
+      for (let s = 0; s < stripes; s++) {
+        const x = ax + (s * aw) / stripes;
+        ctx.fillStyle = tone(ctx, s % 2 ? 0.5 : 1);
+        ctx.fillRect(x, 600, aw / stripes, 70);
+        ctx.beginPath();
+        ctx.arc(x + aw / stripes / 2, 670, aw / stripes / 2, 0, Math.PI);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#fff';
+      ctx.save();
+      ctx.lineWidth = 10;
+      ctx.strokeRect(325, 700, 350, 170);
+      ctx.lineWidth = 8;
+      ctx.strokeRect(355, 735, 130, 80);
+      ctx.strokeRect(545, 735, 100, 135);
+      ctx.restore();
     },
   },
 
-  /** main, a feature branch that opens from an issue, and the merge back as a PR. */
+  /** Issue in → plan, code, test → pull request out, with its diff. */
   pullwright: {
-    width: 1000,
+    width: 1100,
     height: 620,
     draw(ctx) {
-      const y = 430;
-      line(ctx, [[40, y], [960, y]], 18);
-      ctx.save();
-      ctx.lineWidth = 18;
-      ctx.beginPath();
-      ctx.moveTo(250, y);
-      ctx.bezierCurveTo(330, y, 330, 170, 420, 170);
-      ctx.lineTo(620, 170);
-      ctx.bezierCurveTo(710, 170, 710, y, 790, y);
-      ctx.stroke();
-      ctx.restore();
-      for (const x of [110, 250, 900]) circle(ctx, x, y, 30);
-      for (const x of [440, 530, 620]) circle(ctx, x, 170, 30);
-      ring(ctx, 790, y, 46, 14);
-      circle(ctx, 790, y, 20);
-      // The issue it started from.
-      ring(ctx, 250, 140, 48, 12);
-      circle(ctx, 250, 140, 12);
-      line(ctx, [[250, 196], [250, 300]], 8, [10, 14]);
+      const card = (x: number, y: number, w: number, h: number) => {
+        ctx.save();
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 24);
+        ctx.stroke();
+        ctx.restore();
+      };
+      // The issue.
+      card(30, 150, 300, 320);
+      ring(ctx, 92, 215, 26, 8);
+      circle(ctx, 92, 215, 8);
+      fillRect(ctx, { x: 136, y: 202, w: 166, h: 28 }, 0, '#fff');
+      [240, 200, 160].forEach((w, i) => fillRect(ctx, { x: 62, y: 285 + i * 44, w, h: 16 }, 0, tone(ctx, 0.5)));
+
+      // The agent's pipeline: plan → code → test.
+      line(ctx, [[330, 310], [770, 310]], 8);
+      line(ctx, [[742, 290], [770, 310], [742, 330]], 8);
+      const steps = [440, 550, 660];
+      for (const x of steps) {
+        ctx.globalCompositeOperation = 'destination-out';
+        circle(ctx, x, 310, 42);
+        ctx.globalCompositeOperation = 'source-over';
+        ring(ctx, x, 310, 42, 8);
+      }
+      ctx.globalCompositeOperation = 'destination-out';
+      for (const x of steps) circle(ctx, x, 310, 37);
+      ctx.globalCompositeOperation = 'source-over';
+      for (const dy of [-12, 0, 12]) line(ctx, [[422, 310 + dy], [458, 310 + dy]], 5);
+      line(ctx, [[540, 296], [528, 310], [540, 324]], 6);
+      line(ctx, [[560, 296], [572, 310], [560, 324]], 6);
+      line(ctx, [[644, 312], [656, 324], [678, 298]], 7);
+
+      // The pull request, with its diff.
+      card(770, 110, 300, 400);
+      ring(ctx, 826, 160, 13, 6);
+      ring(ctx, 826, 222, 13, 6);
+      line(ctx, [[826, 173], [826, 209]], 6);
+      ring(ctx, 878, 222, 13, 6);
+      line(ctx, [[878, 209], [878, 172], [862, 160], [850, 160]], 6);
+      fillRect(ctx, { x: 910, y: 176, w: 130, h: 26 }, 0, '#fff');
+      const rows: [boolean, number][] = [
+        [true, 200],
+        [true, 160],
+        [false, 130],
+        [true, 190],
+        [true, 110],
+        [false, 150],
+        [true, 90],
+      ];
+      rows.forEach(([add, w], i) => {
+        const y = 268 + i * 32;
+        const mark = 806;
+        line(ctx, [[mark - 9, y], [mark + 9, y]], 5);
+        if (add) line(ctx, [[mark, y - 9], [mark, y + 9]], 5);
+        fillRect(ctx, { x: 830, y: y - 8, w, h: 16 }, 0, tone(ctx, add ? 1 : 0.25));
+      });
     },
   },
 
@@ -243,27 +354,46 @@ export const PROJECT_SHAPES: Record<string, ShapeDef> = {
     },
   },
 
-  /** A leader's order mirrored into followers' accounts, each sized to its own settings, behind a kill-switch. */
+  /**
+   * One leader's price line with its BUY, echoed by followers' lines below — the same path at
+   * their own size — and a dashed drop through every copy: filled in the same instant.
+   */
   believemeguys: {
     width: 1000,
-    height: 620,
+    height: 760,
     draw(ctx) {
-      line(ctx, [[140, 110], [140, 510]], 8);
-      fillRect(ctx, { x: 98, y: 200, w: 84, h: 220 }, 0, '#fff');
-      ring(ctx, 140, 60, 30, 8);
-      circle(ctx, 140, 60, 10);
-      const ys = [90, 200, 310, 420, 530];
-      const scale = [0.9, 0.55, 1, 0.4, 0.7];
-      ys.forEach((y, i) => {
-        line(ctx, [[196, 310], [740, y]], 5);
-        circle(ctx, 750, y, 12);
-        const s = scale[i]!;
-        const x = 860;
-        line(ctx, [[x, y - 70 * s], [x, y + 70 * s]], 5);
-        fillRect(ctx, { x: x - 18, y: y - 44 * s, w: 36, h: 88 * s }, 0, tone(ctx, i % 2 ? 0.5 : 1));
+      const path = (x: number) =>
+        Math.sin(x * 0.012) * 34 + Math.sin(x * 0.031 + 1.3) * 14 - (x - 120) * 0.11 + (x > 430 ? -(x - 430) * 0.12 : 0);
+      const buyX = 430;
+      const traces = [
+        { y: 190, scale: 1, width: 13, density: 1 as const },
+        { y: 360, scale: 0.75, width: 9, density: 1 as const },
+        { y: 500, scale: 0.55, width: 9, density: 0.5 as const },
+        { y: 620, scale: 0.4, width: 8, density: 0.5 as const },
+      ];
+      line(ctx, [[buyX, traces[0]!.y + path(buyX)], [buyX, 700]], 4, [10, 12]);
+      traces.forEach((t, i) => {
+        const pts: [number, number][] = [];
+        for (let x = 120; x <= 950; x += 8) pts.push([x, t.y + path(x) * t.scale]);
+        ctx.save();
+        ctx.strokeStyle = tone(ctx, t.density);
+        line(ctx, pts, t.width);
+        ctx.restore();
+        const by = t.y + path(buyX) * t.scale;
+        ctx.globalCompositeOperation = 'destination-out';
+        circle(ctx, buyX, by, i === 0 ? 30 : 20);
+        ctx.globalCompositeOperation = 'source-over';
+        ring(ctx, buyX, by, i === 0 ? 30 : 20, i === 0 ? 8 : 6);
+        circle(ctx, buyX, by, i === 0 ? 11 : 7);
       });
-      line(ctx, [[560, 30], [560, 590]], 3, [4, 12]);
-      fillRect(ctx, { x: 546, y: 270, w: 28, h: 80 }, 0, '#fff');
+      // The verified leader's badge.
+      const ly = traces[0]!.y + path(120);
+      circle(ctx, 70, ly, 36);
+      ctx.globalCompositeOperation = 'destination-out';
+      line(ctx, [[54, ly + 2], [66, ly + 14], [88, ly - 10]], 9);
+      ctx.globalCompositeOperation = 'source-over';
+      // Followers' avatars.
+      traces.slice(1).forEach((t) => ring(ctx, 70, t.y + path(120) * t.scale, 22, 7));
     },
   },
 

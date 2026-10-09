@@ -158,7 +158,7 @@ export class Experience {
     const { demo, stream } = this;
     demo.update(dt);
     const u = stream.u;
-    const want = demo.active ? 1 : 0;
+    const want = demo.active && demo.ready ? 1 : 0;
     // Particles carry the clip while they fly in; they let go of it gently on the way out.
     u.videoMix.value += (want - u.videoMix.value) * (1 - Math.exp(-dt * (want ? 2.5 : 1.2)));
     u.particleDim.value = 1 - 0.88 * demo.crisp;

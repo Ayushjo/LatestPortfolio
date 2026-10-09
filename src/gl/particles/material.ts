@@ -44,7 +44,7 @@ export function createMaterial(b: Buffers, u: Uniforms): SpriteNodeMaterial {
   const inside = step(0, vuv.x).mul(step(vuv.x, 1)).mul(step(0, vuv.y)).mul(step(vuv.y, 1));
   const clip = u.videoMap.sample(clamp(vuv, 0, 1)).rgb.mul(u.brightness).mul(u.videoGain);
   const silver = SILVER.mul(lum);
-  const shown = mix(silver, clip.add(silver.mul(0.12)), u.videoMix.mul(inside));
+  const shown = mix(silver, clip, u.videoMix.mul(inside));
 
   mat.colorNode = shown.mul(mix(float(1), u.particleDim, inside));
   mat.opacityNode = shapeCircle();

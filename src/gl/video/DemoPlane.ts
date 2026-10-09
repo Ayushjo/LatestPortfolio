@@ -1,5 +1,5 @@
 import { uniform, uv } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, SRGBColorSpace, Texture, VideoTexture, type Scene } from 'three/webgpu';
+import { DataTexture, Mesh, MeshBasicNodeMaterial, PlaneGeometry, SRGBColorSpace, VideoTexture, type Scene } from 'three/webgpu';
 import type { Uniforms } from '../particles/uniforms';
 
 export interface WorldRect {
@@ -18,7 +18,8 @@ export class DemoPlane {
   readonly video = document.createElement('video');
   private target = 0;
   private videoTexture: VideoTexture | null = null;
-  private placeholder = new Texture();
+  /** Black, so particles never flash white while a clip has no frame yet. */
+  private placeholder = blackTexture();
   private mesh: Mesh;
   private delay = 0;
   rect: WorldRect | null = null;
@@ -30,7 +31,7 @@ export class DemoPlane {
     Object.assign(this.video, { muted: true, loop: true, playsInline: true, preload: 'auto' });
     this.video.setAttribute('aria-hidden', 'true');
     // Light-UI clips are dimmed a touch so they don't glare out of the dark page.
-    this.video.addEventListener('loadeddata', () => (this.u.gain.value = averageLuma(this.video) > 0.55 ? 0.82 : 1));
+    this.video.addEventListener('loadeddata', () => (this.u.gain.value = averageLuma(this.video) > 0.55 ? 0.6 : 1));
 
     const mat = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
     mat.colorNode = shared.videoMap.sample(uv()).rgb.mul(this.u.gain);
@@ -73,6 +74,11 @@ export class DemoPlane {
   /** 0 → 1 as the crisp plane fades in. */
   get crisp() {
     return this.u.opacity.value;
+  }
+
+  /** True once the clip has a decoded frame the particles can sample. */
+  get ready() {
+    return this.video.readyState >= 2;
   }
 
   get progress() {
@@ -125,4 +131,10 @@ function averageLuma(video: HTMLVideoElement): number {
   let sum = 0;
   for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i]! + 0.7152 * d[i + 1]! + 0.0722 * d[i + 2]!;
   return sum / (d.length / 4) / 255;
+}
+
+function blackTexture() {
+  const t = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+  t.needsUpdate = true;
+  return t;
 }
