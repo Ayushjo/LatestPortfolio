@@ -14,7 +14,7 @@ const {
 } = Astro.props;
 
 /** Versioned so link-preview caches (X keeps them ~7 days) fetch a new image when it changes. */
-const ogImage = new URL('/og-v2.png', Astro.site).href;
+const ogImage = new URL('/og-v3.png', Astro.site).href;
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -50,8 +50,8 @@ const jsonLd = {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content="AYUSH in silver particles — Ayush Singh, systems engineer" />
-    <meta property="og:image:alt" content="AYUSH in silver particles — Ayush Singh, systems engineer" />
+    <meta name="twitter:image:alt" content="Ayush Singh, systems engineer — portrait in silver particles" />
+    <meta property="og:image:alt" content="Ayush Singh, systems engineer — portrait in silver particles" />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <link rel="alternate" type="application/rss+xml" title="Writing" href="/rss.xml" />
 

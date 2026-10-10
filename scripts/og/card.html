@@ -1,0 +1,60 @@
+<!-- The share card (public/og-v3.png). Render: sh scripts/og/render.sh -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#050506}
+  #card{position:relative;width:1200px;height:630px;overflow:hidden;background:#050506;color:#f2f3f5}
+  canvas{position:absolute;inset:0}
+  .t{position:absolute;white-space:nowrap}
+  .serif{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;letter-spacing:-0.01em}
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+  .sans{font-family:'Inter Tight',sans-serif}
+  .dim{color:#8b8e96}.faint{color:#5d6068}
+  .rule{position:absolute;height:1px;background:#2a2c31}
+</style></head>
+<body><div id="card"><canvas id="c" width="2400" height="1260" style="width:1200px;height:630px"></canvas></div>
+<script>
+const W=1200,H=630,S=2;
+const v='a';
+const card=document.getElementById('card'), cv=document.getElementById('c'), g=cv.getContext('2d');
+g.scale(S,S);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const html=(s)=>card.insertAdjacentHTML('beforeend',s);
+
+// --- ink sources -------------------------------------------------------
+function maskCanvas(){const c=document.createElement('canvas');c.width=W;c.height=H;return [c,c.getContext('2d',{willReadFrequently:true})];}
+async function img(src){const i=new Image();i.src=src;await new Promise(r=>i.onload=r);return i;}
+/** Samples points with probability ∝ luminance inside a drawn mask. */
+function sample(ctx,n,gamma=1){const d=ctx.getImageData(0,0,W,H).data;const pts=[];let tries=0;
+  while(pts.length<n&&tries<n*60){tries++;const x=Math.random()*W|0,y=Math.random()*H|0;const l=d[(y*W+x)*4]/255;
+    if(l>0.04&&Math.random()<Math.pow(l,gamma))pts.push([x+Math.random(),y+Math.random(),l]);}return pts;}
+
+// --- particles + glow ----------------------------------------------------
+const layer=document.createElement('canvas');layer.width=W*S;layer.height=H*S;const L=layer.getContext('2d');L.scale(S,S);
+function dots(pts,{r=[0.5,1.2],a=[0.35,0.95],lumW=0.6}={}){for(const [x,y,l] of pts){const al=rnd(a[0],a[1])*(1-lumW+lumW*l);const rr=rnd(r[0],r[1]);
+  L.fillStyle=`rgba(${236*al|0},${242*al|0},${255*al|0},${al})`;L.beginPath();L.arc(x,y,rr,0,7);L.fill();}}
+function stream({y0=315,spread=360,n=5000,amp=26,alpha=[0.05,0.26]}={}){for(let i=0;i<n;i++){const lane=(i%36)/36;const x=Math.random()*W;
+  const y=y0+(lane-0.5)*spread+Math.sin(x*0.006+lane*9)*amp+rnd(-3,3);const al=rnd(alpha[0],alpha[1]);
+  L.fillStyle=`rgba(${230*al|0},${235*al|0},${255*al|0},${al})`;L.fillRect(x,y,rnd(2,9),0.9);}}
+function composite(glow=9){g.fillStyle='#050506';g.fillRect(0,0,W,H);
+  g.save();g.filter=`blur(${glow}px)`;g.globalAlpha=0.9;g.drawImage(layer,0,0,W,H);g.restore();
+  g.globalCompositeOperation='screen';g.drawImage(layer,0,0,W,H);g.globalCompositeOperation='source-over';
+  // grain
+  const n=g.getImageData(0,0,W*S,H*S);const d=n.data;for(let i=0;i<d.length;i+=4){const k=(Math.random()-0.5)*7;d[i]+=k;d[i+1]+=k;d[i+2]+=k;}g.putImageData(n,0,0);}
+function vignette(){const r=g.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,W*0.75);r.addColorStop(0,'rgba(0,0,0,0)');r.addColorStop(1,'rgba(0,0,0,0.55)');g.fillStyle=r;g.fillRect(0,0,W,H);}
+
+async function textMask(text,{font,x,y,align='center'}){const [c,ctx]=maskCanvas();await document.fonts.load(font);ctx.fillStyle='#fff';ctx.font=font;ctx.textAlign=align;ctx.textBaseline='alphabetic';ctx.fillText(text,x,y);return ctx;}
+async function imageMask(src,{x,y,h}){const [c,ctx]=maskCanvas();const i=await img(src);const w=i.width*h/i.height;ctx.drawImage(i,x,y,w,h);return ctx;}
+
+const variants={
+  // A — portrait in particles, editorial type on the left.
+  async a(){const m=await imageMask('../../public/portrait/ayush-bust-matte.png',{x:640,y:20,h:610});dots(sample(m,90000,1.1),{r:[0.45,1.1]});stream({y0:520,spread:180,n:2600,alpha:[0.03,0.16]});composite(7);vignette();
+    html(`<div class="t mono dim" style="left:72px;top:150px;font-size:15px">Systems engineer · Naya Raipur</div>
+      <div class="t serif" style="left:68px;top:178px;font-size:112px;line-height:.95">Ayush<br>Singh</div>
+      <div class="t sans dim" style="left:72px;top:420px;font-size:25px;line-height:1.35">Storage engines, proxies, agents —<br>the parts of software nobody sees.</div>
+      <div class="t mono" style="left:72px;top:536px;font-size:16px;color:#d9dbe0">www.iayush.com</div>`);},
+
+};
+(async()=>{await document.fonts.ready;await variants[v]();await document.fonts.ready;document.title='ready';})();
+</script></body></html>

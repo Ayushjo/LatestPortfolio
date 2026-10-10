@@ -19,7 +19,7 @@ pnpm install
 pnpm dev          # http://localhost:4321
 pnpm build        # type-check + static build into dist/
 pnpm data         # refresh src/data/github.json from GitHub
-swift scripts/og.swift   # re-render public/og-v2.png (bump the version when it changes)
+sh scripts/og/render.sh   # re-render the share card, public/og-v3.png
 swift scripts/logo-matte.swift <logo> public/logos/<name>.png 640   # a logo → particle shape (see the script for options)
 ```
 
