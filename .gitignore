@@ -4,3 +4,7 @@ dist/
 .DS_Store
 .env*
 !.env.example
+
+# local tooling, kept out of the repo
+.claude/
+docs/demo-video-prompt.md

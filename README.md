@@ -75,7 +75,7 @@ Drop these files into `public/demos/` and rebuild; they're picked up automatical
 - `<slug>.jpg`: optional poster frame
 - `<slug>.json`: optional captions, in the form `{ "captions": [{ "from": 0, "to": 2.2, "text": "…" }] }`
 
-Record clips with the prompt in [`docs/demo-video-prompt.md`](docs/demo-video-prompt.md). It sets the house style (near-black, dark-mode UIs, Instrument Serif titles, a hook → proof → number arc) and writes all three files.
+House style for clips: near-black, dark-mode UIs, Instrument Serif titles, a hook → proof → number arc.
 
 ## Deploy
 
