@@ -20,6 +20,7 @@ pnpm dev          # http://localhost:4321
 pnpm build        # type-check + static build into dist/
 pnpm data         # refresh src/data/github.json from GitHub
 swift scripts/og.swift   # re-render public/og.png
+swift scripts/logo-matte.swift <logo> public/logos/<name>.png 640   # a logo → particle shape (see the script for options)
 ```
 
 Add `?debug` to the URL for a live tweak panel of every shader uniform, or `?gl=webgl` to force the WebGL2 fallback.

@@ -17,8 +17,16 @@ export interface StreamHooks {
 export interface BeatSpec {
   key: string;
   side: ShapeSide;
+  /**
+   * Where this beat's text begins when pinned, as a fraction of viewport height. On tall
+   * screens the shape is fitted above it, so it never sits on the story.
+   */
+  room?: () => number;
 }
 
+/** Tall layouts: the fixed header's height, and the clear space kept above a beat's text. */
+const HEADER_PX = 72;
+const STORY_GAP_PX = 18;
 const INTRO_DELAY = 0.8;
 const FORM_DURATION = 2.6;
 const HOLD = 3.4;
@@ -233,7 +241,7 @@ export class StreamScene implements Scene {
       } else {
         const canvas = await shapeCanvas(spec.key, view.halfW / view.halfH > 1.15);
         if (view !== this.view) return;
-        this.clouds.set(k, canvas ? sampleInk(canvas, this.quality.count, this.placement(spec.side, view)) : null);
+        this.clouds.set(k, canvas ? sampleInk(canvas, this.quality.count, this.placement(spec.side, view, spec.room?.())) : null);
       }
       while (this.clouds.size > CACHE_LIMIT) this.clouds.delete(this.clouds.keys().next().value!);
     } finally {
@@ -268,9 +276,20 @@ export class StreamScene implements Scene {
   }
 
   /** Shapes sit opposite their story on wide screens, above it on tall ones. */
-  placement(side: ShapeSide, view: View): Placement {
+  placement(side: ShapeSide, view: View, room?: number): Placement {
     const wide = view.halfW / view.halfH > 1.15;
-    if (!wide) return { centerX: 0, centerY: view.halfH * 0.42, maxWidth: view.halfW * 1.7, maxHeight: view.halfH * 0.72 };
+    if (!wide) {
+      // Between the header and the story (both as fractions of the viewport from the top), never
+      // lower than the usual band and never so small the shape stops reading.
+      const top = Math.max(0.11, HEADER_PX / innerHeight);
+      const bottom = Math.max(top + 0.15, Math.min(0.47, (room ?? 1) - STORY_GAP_PX / innerHeight));
+      return {
+        centerX: 0,
+        centerY: (1 - (top + bottom)) * view.halfH,
+        maxWidth: view.halfW * 1.7,
+        maxHeight: (bottom - top) * 2 * view.halfH,
+      };
+    }
     if (side === 'center')
       return { centerX: 0, centerY: view.halfH * 0.2, maxWidth: view.halfW * 1.5, maxHeight: view.halfH * 0.9 };
     const s = side === 'right' ? 1 : -1;

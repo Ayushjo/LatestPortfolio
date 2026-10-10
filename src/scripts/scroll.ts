@@ -41,6 +41,28 @@ export function readBeats(root: ParentNode = document): Beat[] {
   }));
 }
 
+/**
+ * Where a beat's text begins when its section is pinned, as a fraction of viewport height.
+ * Offsets are taken inside the nearest sticky container, so the answer doesn't depend on
+ * where the page is scrolled.
+ */
+export function storyTop(beat: HTMLElement): number {
+  let best = Infinity;
+  for (const el of beat.querySelectorAll<HTMLElement>('h2, h3, p, li, a, button, code')) {
+    if (el.closest('[hidden]') || !el.offsetParent || !el.getClientRects().length) continue;
+    let frame: HTMLElement = beat;
+    for (let p = el.parentElement; p && p !== beat; p = p.parentElement) {
+      if (getComputedStyle(p).position === 'sticky') {
+        frame = p;
+        break;
+      }
+    }
+    const offset = el.getBoundingClientRect().top - frame.getBoundingClientRect().top;
+    if (offset >= 0) best = Math.min(best, offset);
+  }
+  return Number.isFinite(best) ? best / innerHeight : 1;
+}
+
 export function startSmoothScroll(): void {
   if (lenis) return;
   lenis = new Lenis({ lerp: 0.09, wheelMultiplier: 0.9 });

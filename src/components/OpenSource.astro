@@ -349,6 +349,12 @@ const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
       display: none;
     }
   }
+  /* Short phones: keep the headline, numbers and links; the shape needs the rest of the room. */
+  @media (max-aspect-ratio: 23/20) and (max-height: 700px) {
+    .diff {
+      display: none;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .panel > * {
       opacity: 1;

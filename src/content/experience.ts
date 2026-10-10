@@ -13,12 +13,15 @@ export interface Role {
   points: string[];
   stats?: Stat[];
   links?: { label: string; href: string }[];
+  /** Particle shape key; defaults to the drawn `exp:<id>`. Logos are mattes from scripts/logo-matte.swift. */
+  shape?: string;
 }
 
 /** Newest first. */
 export const experience: Role[] = [
   {
     id: 'amrevx',
+    shape: 'image:/logos/tradelogs.png',
     kind: 'work',
     company: 'Amrevx',
     title: 'Software Development Engineer Intern',
@@ -34,6 +37,7 @@ export const experience: Role[] = [
   },
   {
     id: 'vedaai',
+    shape: 'image:/logos/vedaai.png',
     kind: 'work',
     company: 'VedaAI',
     title: 'SDE Intern',
@@ -49,6 +53,7 @@ export const experience: Role[] = [
   },
   {
     id: 'cineprism',
+    shape: 'image:/logos/cineprism.png|/logos/cineprism-tall.png',
     kind: 'work',
     company: 'TheCinePrism',
     title: 'Freelance Full-Stack Developer',

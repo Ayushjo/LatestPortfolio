@@ -252,66 +252,6 @@ export const PROJECT_SHAPES: Record<string, ShapeDef> = {
     },
   },
 
-  /** A prism splitting one beam into a fan of rays. */
-  thecineprism: {
-    width: 1000,
-    height: 620,
-    draw(ctx) {
-      const cx = 470;
-      const cy = 330;
-      const s = 210;
-      const p: [number, number][] = [
-        [cx, cy - s],
-        [cx + s * 0.9, cy + s * 0.55],
-        [cx - s * 0.9, cy + s * 0.55],
-      ];
-      line(ctx, [[20, 450], [cx - s * 0.42, cy + 30]], 18);
-      for (let i = 0; i < 7; i++) {
-        const t = i / 6;
-        line(ctx, [[cx + s * 0.4, cy + 10], [990, 110 + t * 420]], 16 - i * 1.4);
-      }
-      ctx.fillStyle = tone(ctx, 0.25);
-      ctx.beginPath();
-      ctx.moveTo(...p[0]!);
-      ctx.lineTo(...p[1]!);
-      ctx.lineTo(...p[2]!);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.lineWidth = 16;
-      ctx.stroke();
-    },
-  },
-
-  /** Candles climbing, a tilt drawdown, and the recovery. */
-  tradelogs: {
-    width: 1000,
-    height: 620,
-    draw(ctx) {
-      const r = rng(7);
-      let price = 420;
-      for (let i = 0; i < 16; i++) {
-        const drift = i >= 7 && i <= 9 ? 55 : -24;
-        const open = price;
-        const close = price + drift + (r() - 0.5) * 50;
-        const hi = Math.min(open, close) - 20 - r() * 40;
-        const lo = Math.max(open, close) + 20 + r() * 40;
-        const x = 50 + i * 60;
-        line(ctx, [[x, hi], [x, lo]], 6);
-        const top = Math.min(open, close);
-        const h = Math.max(10, Math.abs(close - open));
-        if (close < open) fillRect(ctx, { x: x - 18, y: top, w: 36, h }, 0, '#fff');
-        else {
-          ctx.save();
-          ctx.lineWidth = 6;
-          ctx.strokeRect(x - 16, top + 2, 32, h - 4);
-          ctx.restore();
-        }
-        price = Math.max(110, Math.min(560, close));
-      }
-    },
-  },
-
   /** A sensor trace with one anomaly flagged, over a grid of sensor points. */
   'ics-fault-detection': {
     width: 1000,

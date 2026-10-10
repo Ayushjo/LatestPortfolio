@@ -40,8 +40,13 @@ export async function shapeCanvas(key: string, wide = true): Promise<HTMLCanvasE
  */
 async function imageCanvas(url: string): Promise<HTMLCanvasElement> {
   const img = new Image();
-  img.src = url;
-  await img.decode();
+  // `load`, not `decode()`: browsers hold decode() while the tab is hidden, which would stall
+  // a background prefetch; drawImage below decodes synchronously anyway.
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error(`shape image failed: ${url}`));
+    img.src = url;
+  });
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   const src = inkCanvas(w, h);

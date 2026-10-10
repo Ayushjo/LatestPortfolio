@@ -23,7 +23,7 @@ const hash = (s: string) => {
       experience.map((r, i) => (
         <li
           class="entry"
-          data-beat={`exp:${r.id}`}
+          data-beat={r.shape ?? `exp:${r.id}`}
           data-side="right"
           data-label={r.company}
           data-group="Experience"
@@ -288,8 +288,19 @@ const hash = (s: string) => {
     .points li:nth-child(n + 3) {
       display: none;
     }
+    /* The numbers repeat the bullets; dropping them keeps the story clear of the logo above. */
+    .stats {
+      display: none;
+    }
     .summary {
       font-size: 1.05rem;
+    }
+  }
+  /* Short phones: keep the headline, numbers and links; the shape needs the rest of the room. */
+  @media (max-aspect-ratio: 23/20) and (max-height: 700px) {
+    .product,
+    .points {
+      display: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {

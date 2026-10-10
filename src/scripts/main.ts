@@ -4,7 +4,7 @@ import { getMode, hasStoredMode, onModeChange, prefersReducedMotion, setMode, ty
 import { initCalendarReadout } from './calendar';
 import { initDemos } from './demo';
 import { initRail } from './rail';
-import { readBeats, scrollToTarget, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
+import { readBeats, scrollToTarget, storyTop, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
 
 const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
@@ -130,7 +130,7 @@ async function apply(mode: Mode) {
     if (gen !== generation) return;
     const exp = await Experience.boot(canvas, q, {
       calm,
-      beats: beats.map(({ key, side }) => ({ key, side })),
+      beats: beats.map(({ key, side, el }) => ({ key, side, room: () => storyTop(el) })),
       hooks: {
         onFormed: () => heroTitle?.classList.add('is-handed-off'),
         onSlow: () => {

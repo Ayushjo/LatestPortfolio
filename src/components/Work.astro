@@ -419,6 +419,13 @@ const total = pad(featured.length);
       display: none;
     }
   }
+  /* Short phones: keep the headline, numbers and links; the shape needs the rest of the room. */
+  @media (max-aspect-ratio: 23/20) and (max-height: 700px) {
+    .role,
+    .summary {
+      display: none;
+    }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .panel > * {
