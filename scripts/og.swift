@@ -1,10 +1,10 @@
-// Renders public/og.png (1200×630): "AYUSH" as silver particles with a soft glow, plus name and URL.
+// Renders public/og-v2.png (bump the name when it changes) (1200×630): "AYUSH" as silver particles with a soft glow, plus name and URL.
 // Run: swift scripts/og.swift
 import AppKit
 import CoreImage
 
 let W = 1200, H = 630
-let out = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "public/og.png")
+let out = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "public/og-v2.png")
 
 func bitmap() -> CGContext {
   CGContext(data: nil, width: W, height: H, bitsPerComponent: 8, bytesPerRow: 0,
