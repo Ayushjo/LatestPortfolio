@@ -19,7 +19,7 @@ const silver = {
 };
 
 export default defineConfig({
-  site: 'https://iayush.com',
+  site: 'https://www.iayush.com',
   output: 'static',
   integrations: [sitemap()],
   markdown: {
