@@ -154,7 +154,8 @@ export class Experience {
   }
 
   private tick = (time: number, deltaMs: number) => {
-    if (this.disposed) return;
+    // A zero-sized window (a collapsed iframe, say) has no swapchain to draw into.
+    if (this.disposed || !innerWidth || !innerHeight) return;
     const dt = deltaMs / 1000;
     this.input.update(dt);
     this.stream.update(time, dt, progress);
@@ -207,6 +208,7 @@ export class Experience {
   }
 
   private onResize = () => {
+    if (!innerWidth || !innerHeight) return;
     this.hideDemo();
     const view = currentView();
     this.renderer.setSize(innerWidth, innerHeight, false);
