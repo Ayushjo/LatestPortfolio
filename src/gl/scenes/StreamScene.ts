@@ -26,7 +26,7 @@ export interface BeatSpec {
 
 /** Tall layouts: the fixed header's height, and the clear space kept above a beat's text. */
 const HEADER_PX = 72;
-const STORY_GAP_PX = 18;
+const STORY_GAP_PX = 26;
 const INTRO_DELAY = 0.8;
 const FORM_DURATION = 2.6;
 const HOLD = 3.4;

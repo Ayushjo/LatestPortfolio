@@ -3,6 +3,12 @@
 //
 // Run: swift scripts/logo-matte.swift <in> <out.png> <maxSide> [options]
 //   --floor F     any visible pixel is lifted to at least F, so dark brand colours still read
+//   --lift L      lifts every visible pixel to L + (1 − L)·luminance: like --floor, but tones
+//                 keep their order (a red frame and a blue gear stay apart)
+//   --min M       drops pixels darker than M (after --ink), e.g. to keep only a logo's white
+//                 letter and let --outline draw the coloured parts as a contour
+//   --ink         for dark-on-light logos (a seal on a white disc): darkness and colour become
+//                 the bright parts, white and transparency both become empty
 //   --outline R   adds a bright R-px outline around the subject: the logo's alpha (an app-icon
 //                 tile, say) or, with --person, the person
 //   --person L    keeps only the person (Vision segmentation) and lifts their darks by L, so
@@ -16,7 +22,7 @@ import Vision
 
 var args = Array(CommandLine.arguments.dropFirst())
 guard args.count >= 3, let maxSide = Double(args[2]) else {
-  print("usage: swift scripts/logo-matte.swift <in> <out.png> <maxSide> [--floor F] [--outline R] [--person L]")
+  print("usage: swift scripts/logo-matte.swift <in> <out.png> <maxSide> [--floor F] [--lift L] [--min M] [--ink] [--outline R] [--person L]")
   exit(1)
 }
 func option(_ name: String) -> Double? {
@@ -26,6 +32,9 @@ func option(_ name: String) -> Double? {
 let floorLevel = option("--floor")
 let outline = option("--outline")
 let personLift = option("--person")
+let liftLevel = option("--lift")
+let ink = args.contains("--ink")
+let minLevel = option("--min") ?? 0.06
 
 let input = CIImage(contentsOf: URL(fileURLWithPath: args[0]), options: [.applyOrientationProperty: true])!
 let extent = input.extent
@@ -75,10 +84,14 @@ if let lift = personLift {
     "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 1), "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0),
     "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 1),
   ]).cropped(to: extent)
-  let flat = input.composited(over: black)
-  out = mapGrey(flat) { lum, _ in
-    guard let f = floorLevel else { return lum }
-    return lum < 0.06 ? 0 : max(lum, f)
+  // Ink logos are flattened onto white, so the paper and the transparent margin both read as empty.
+  let flat = input.composited(over: ink ? CIImage(color: .white).cropped(to: extent) : black)
+  out = mapGrey(flat) { lum, sat in
+    let v = ink ? max(1 - lum, sat) : lum
+    if v < minLevel { return 0 }
+    if let l = liftLevel { return l + (1 - l) * v }
+    if let f = floorLevel { return max(v, f) }
+    return v
   }
 }
 

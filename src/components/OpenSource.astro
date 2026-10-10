@@ -55,20 +55,30 @@ const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
     )
   }
 
-  <article class="beat" data-beat="oss:galaxy" data-side="right" data-label="FreeCAD" data-group="Open source">
+  <article class="beat" data-beat="image:/logos/freecad.png" data-side="right" data-label="FreeCAD" data-group="Open source">
     <div class="beat-sticky">
       <div class="panel">
         <p class="kicker">FreeCAD</p>
         <h3>Then I opened FreeCAD.</h3>
-        <p class="body">
-          A parametric 3D CAD modeller, in development since 2002. Every dot here is one of its files, laid out by folder. The
-          bright {spotChanged} are the ones I’ve changed.
-        </p>
+        <p class="body">A parametric 3D CAD modeller, in development since 2002 and built by people all over the world.</p>
         <ul class="stats">
           <li><span class="value">{fmt(spot.files)}</span><span class="label">files</span></li>
           <li><span class="value">{fmt(roundDown(spot.contributors, 100))}+</span><span class="label">contributors</span></li>
           <li><span class="value">{Math.floor(spot.stars / 1000)}k</span><span class="label">stars</span></li>
         </ul>
+      </div>
+    </div>
+  </article>
+
+  <article class="beat" data-beat="oss:galaxy" data-side="right" data-label="Its files" data-group="Open source">
+    <div class="beat-sticky">
+      <div class="panel">
+        <p class="kicker">FreeCAD · the codebase</p>
+        <h3>Every dot is a file.</h3>
+        <p class="body">
+          All {fmt(spot.files)} of them, laid out by folder. In August I’d never read a line of it. The bright {spotChanged} are
+          the ones I’ve changed since.
+        </p>
       </div>
     </div>
   </article>

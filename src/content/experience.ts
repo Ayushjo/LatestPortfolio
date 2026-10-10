@@ -13,8 +13,8 @@ export interface Role {
   points: string[];
   stats?: Stat[];
   links?: { label: string; href: string }[];
-  /** Particle shape key; defaults to the drawn `exp:<id>`. Logos are mattes from scripts/logo-matte.swift. */
-  shape?: string;
+  /** Particle shape key: the organisation's logo, a matte from scripts/logo-matte.swift. */
+  shape: string;
 }
 
 /** Newest first. */
@@ -74,6 +74,7 @@ export const experience: Role[] = [
   },
   {
     id: 'iiitnr',
+    shape: 'image:/logos/iiitnr.png',
     kind: 'education',
     company: 'IIIT Naya Raipur',
     title: 'B.Tech, Electronics & Communication',

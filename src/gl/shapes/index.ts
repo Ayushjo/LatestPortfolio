@@ -1,16 +1,15 @@
 import { DISPLAY, SERIF, textCanvas } from '../text/sampleText';
 import { inkCanvas } from './sample';
-import { EXPERIENCE_SHAPES } from './experience';
 import { GITHUB_SHAPES } from './github';
 import { OSS_SHAPES } from './oss';
 import { PROJECT_SHAPES } from './projects';
 import type { ShapeDef } from './draw';
 
-const DRAWN: Record<string, ShapeDef> = { ...PROJECT_SHAPES, ...EXPERIENCE_SHAPES, ...OSS_SHAPES, ...GITHUB_SHAPES };
+const DRAWN: Record<string, ShapeDef> = { ...PROJECT_SHAPES, ...OSS_SHAPES, ...GITHUB_SHAPES };
 
 /**
  * Beat keys:
- *   <slug> | exp:<id> | fork …   a drawn shape
+ *   <slug> | oss:<id> | fork …   a drawn shape
  *   text:<line|line>              heavy display text
  *   serif:<line|line>             Instrument Serif italic text
  *   image:<url>[|<tall url>]      a greyscale image; brighter pixels pull in more particles.
