@@ -86,7 +86,7 @@ const total = pad(featured.length);
               </p>
             )}
             {demo && (
-              <video class="inline-demo" data-inline-demo={p.slug} poster={demo.poster || undefined} muted loop playsinline preload="none" hidden />
+              <video class="inline-demo" data-inline-demo={p.slug} data-poster={demo.poster || undefined} muted loop playsinline preload="none" hidden />
               <p class="inline-caption" data-inline-caption={p.slug} aria-live="polite" />
             )}
           </div>

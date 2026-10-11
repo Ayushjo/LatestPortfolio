@@ -65,6 +65,8 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
       exp?.quietShape(true);
       const video = inlineOf(btn);
       if (video) {
+        // Posters are attached on first play: a hidden <video poster> still downloads it.
+        if (video.dataset.poster && !video.poster) video.poster = video.dataset.poster;
         if (!video.getAttribute('src')) video.src = btn.dataset.src!;
         video.hidden = false;
         video.currentTime = 0;

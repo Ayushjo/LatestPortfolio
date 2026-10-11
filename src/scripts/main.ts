@@ -111,6 +111,9 @@ async function apply(mode: Mode) {
   trackScroll(heroSection, beats);
   if (railEl && !stopRail) stopRail = initRail(railEl, beats);
 
+  // Download the engine while the GPU is being sized up, not after.
+  const engine = import('../gl/Experience');
+  engine.catch(() => {});
   const { detectTier, qualityFor } = await import('../gl/quality');
   tier ??= await detectTier();
   if (gen !== generation) return;
@@ -126,7 +129,7 @@ async function apply(mode: Mode) {
   if (!canvas) return;
 
   try {
-    const { Experience } = await import('../gl/Experience');
+    const { Experience } = await engine;
     if (gen !== generation) return;
     const exp = await Experience.boot(canvas, q, {
       calm,
@@ -136,6 +139,12 @@ async function apply(mode: Mode) {
         onSlow: () => {
           if (q.tier === 1) return;
           ceiling = (q.tier - 1) as 1 | 2;
+          // Remembered for the visit, so the next page starts at the tier that held up.
+          try {
+            sessionStorage.setItem('gpu-tier', String(ceiling));
+          } catch {
+            /* fine */
+          }
           void apply(getMode());
         },
       },

@@ -1,4 +1,18 @@
 ---
+// Self-hosted fonts (no Google round trips). Each file carries unicode ranges, so only the
+// subsets a page actually uses are downloaded.
+import '@fontsource/inter-tight/400.css';
+import '@fontsource/inter-tight/500.css';
+import '@fontsource/inter-tight/800.css';
+import '@fontsource/inter-tight/900.css';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+// The hero's particle words are drawn in this weight and the tagline in this face: fetch
+// them with the HTML instead of when the engine first asks for them.
+import heroFont from '@fontsource/inter-tight/files/inter-tight-latin-900-normal.woff2?url';
+import taglineFont from '@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2?url';
 import '../styles/tokens.css';
 import '../styles/global.css';
 import { profile } from '../content/profile';
@@ -55,12 +69,8 @@ const jsonLd = {
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <link rel="alternate" type="application/rss+xml" title="Writing" href="/rss.xml" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
-    />
+    <link rel="preload" href={heroFont} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={taglineFont} as="font" type="font/woff2" crossorigin />
 
     <script is:inline>
       (function () {

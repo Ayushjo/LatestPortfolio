@@ -14,21 +14,55 @@ export interface Quality {
 const COUNTS = { 1: 32_768, 2: 131_072, 3: 262_144 } as const;
 const CASUAL_MAX = 65_536;
 
-/** GPU tier 0..3 from detect-gpu, falling back to a heuristic if the benchmark lookup is slow or fails. */
+const TIER_KEY = 'gpu-tier';
+
+/**
+ * Most a device can take, from what it reports about itself: low memory, few cores or a
+ * data-saver connection cap the particle count before anything is drawn, instead of booting
+ * the top tier and stepping down once frames start dropping.
+ */
+function deviceCeiling(): 1 | 2 | 3 {
+  const nav = navigator as Navigator & {
+    deviceMemory?: number;
+    connection?: { saveData?: boolean; effectiveType?: string };
+  };
+  const memory = nav.deviceMemory ?? 8;
+  const cores = nav.hardwareConcurrency ?? 8;
+  const conn = nav.connection;
+  if (conn?.saveData || /2g/.test(conn?.effectiveType ?? '') || memory <= 2 || cores <= 2) return 1;
+  if (memory <= 4 || cores <= 4) return 2;
+  return 3;
+}
+
+/**
+ * GPU tier 0..3 from detect-gpu (a benchmark lookup over the network), capped by what the
+ * device reports. Remembered for the session, so only the first page view pays for the lookup.
+ */
 export async function detectTier(): Promise<0 | 1 | 2 | 3> {
+  try {
+    const saved = Number(sessionStorage.getItem(TIER_KEY));
+    if (saved >= 0 && saved <= 3 && sessionStorage.getItem(TIER_KEY) !== null) return saved as 0 | 1 | 2 | 3;
+  } catch {
+    /* storage blocked: detect every time */
+  }
   const isMobile = matchMedia('(pointer: coarse)').matches;
   const fallback: 0 | 1 | 2 | 3 = 'gpu' in navigator ? (isMobile ? 2 : 3) : isMobile ? 1 : 2;
+  let tier: 0 | 1 | 2 | 3 = fallback;
   try {
     const { getGPUTier } = await import('detect-gpu');
-    const result = await Promise.race([
-      getGPUTier(),
-      new Promise<null>((r) => setTimeout(() => r(null), 2500)),
-    ]);
-    if (!result || result.type === 'FALLBACK' || result.type === 'BLOCKLISTED') return fallback;
-    return Math.max(0, Math.min(3, result.tier)) as 0 | 1 | 2 | 3;
+    const result = await Promise.race([getGPUTier(), new Promise<null>((r) => setTimeout(() => r(null), 1200))]);
+    if (result && result.type !== 'FALLBACK' && result.type !== 'BLOCKLISTED')
+      tier = Math.max(0, Math.min(3, result.tier)) as 0 | 1 | 2 | 3;
   } catch {
-    return fallback;
+    /* keep the fallback */
   }
+  tier = Math.min(tier, deviceCeiling()) as 0 | 1 | 2 | 3;
+  try {
+    sessionStorage.setItem(TIER_KEY, String(tier));
+  } catch {
+    /* fine */
+  }
+  return tier;
 }
 
 export function qualityFor(mode: Mode, requested: 1 | 2 | 3): Quality {
