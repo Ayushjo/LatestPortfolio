@@ -1,8 +1,6 @@
 ---
 import { profile } from '../content/profile';
-import { projects } from '../content/projects';
-import { experience } from '../content/experience';
-import github from '../data/github.json';
+import { resume } from '../content/resume';
 import { formatDate, getPosts } from '../lib/writing';
 import { demoFor } from '../lib/demos';
 
@@ -12,11 +10,11 @@ interface Props {
 }
 const { standalone = false } = Astro.props;
 
-const work = experience.filter((r) => r.kind === 'work');
-const education = experience.filter((r) => r.kind === 'education');
-const merged = github.prs.merged;
+const work = resume.work;
+const education = resume.education;
+const projects = resume.projects;
+const merged = resume.openSource.merged;
 const posts = (await getPosts()).slice(0, 3);
-const fmt = (n: number) => n.toLocaleString('en-US');
 
 /** Bold the numbers in a line so a skim catches the impact (escapes HTML first). */
 const emphasize = (text: string) =>
@@ -29,12 +27,7 @@ const emphasize = (text: string) =>
       '<strong>$1</strong>',
     );
 
-const glance = [
-  { value: '36k+', label: 'users on a platform I built and run' },
-  { value: '~70k', label: 'req/s from my Rust proxy, ~1% off nginx' },
-  { value: String(merged.length), label: `merged open-source PRs, ${merged.filter((p) => p.repo === 'FreeCAD/FreeCAD').length} into FreeCAD` },
-  { value: fmt(github.calendar.total), label: 'GitHub contributions this year' },
-];
+const glance = resume.glance;
 ---
 
 <article class="resume recruiter-only" aria-labelledby="resume-name">
@@ -147,7 +140,7 @@ const glance = [
       <section class="card" aria-labelledby="skills-h">
         <h2 id="skills-h">Skills</h2>
         {
-          Object.entries(profile.skills).map(([group, list]) => (
+          Object.entries(resume.skills).map(([group, list]) => (
             <div class="skill-group">
               <h3>{group}</h3>
               <ul class="chips">
@@ -179,7 +172,7 @@ const glance = [
             ))
           }
         </ul>
-        <p class="note">{github.prs.open.length} more in review</p>
+        <p class="note">{resume.openSource.openCount} more in review</p>
       </section>
 
       <section class="card" aria-labelledby="edu-h">
