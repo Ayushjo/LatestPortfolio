@@ -22,7 +22,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Recruiter mode is a light, print-friendly document. */
+/* Recruiter mode is a light, print-friendly document... */
 :root[data-mode='recruiter'] {
   --bg: #fafaf7;
   --bg-raised: #ffffff;
@@ -31,4 +31,16 @@
   --fg-faint: #9a9ca3;
   --line: rgba(22, 23, 26, 0.12);
   --accent: #16171a;
+}
+/* ...that follows a dark system setting on screen (a softer dark than the stream). */
+@media screen and (prefers-color-scheme: dark) {
+  :root[data-mode='recruiter'] {
+    --bg: #0c0c0e;
+    --bg-raised: #131316;
+    --fg: #ebecef;
+    --fg-dim: #9497a0;
+    --fg-faint: #5b5d65;
+    --line: rgba(235, 236, 239, 0.12);
+    --accent: #ebecef;
+  }
 }

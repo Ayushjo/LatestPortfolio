@@ -726,6 +726,12 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     filter: invert(1) contrast(1.15);
     mix-blend-mode: multiply;
   }
+  @media screen and (prefers-color-scheme: dark) {
+    .logo {
+      filter: contrast(1.1);
+      mix-blend-mode: screen;
+    }
+  }
   .edu .logo {
     height: 1.5em;
     vertical-align: -0.4em;
