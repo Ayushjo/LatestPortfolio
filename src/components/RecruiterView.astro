@@ -1054,7 +1054,20 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     text-decoration: none;
   }
   .links a {
+    position: relative;
     border-bottom: 1px solid var(--line);
+  }
+  /* Small text links keep their look but get a 24 px+ hit area (WCAG 2.2 target size). */
+  .links a::after,
+  .switch a::after,
+  .switch button::after {
+    content: '';
+    position: absolute;
+    inset: -7px -4px;
+  }
+  .switch a,
+  .switch button {
+    position: relative;
   }
   .links a:hover {
     border-color: var(--fg);
