@@ -112,7 +112,7 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
   const PAD = 18;
   /** The demo button whose chapter shape is under (x, y), if any. */
   const demoAt = (x: number, y: number, target: EventTarget | null): HTMLButtonElement | null => {
-    if (playing || tall()) return null;
+    if (playing) return null;
     if (target instanceof Element && target.closest('a, button, input, textarea, select, .panel, .site-header, .rail')) return null;
     const hit = getExp()?.heldShapeRect();
     if (!hit) return null;
