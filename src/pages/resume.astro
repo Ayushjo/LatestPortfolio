@@ -27,7 +27,7 @@ import { profile } from '../content/profile';
 <script>
   import { initSlider } from '../scripts/slider';
   import { onModeChange } from '../scripts/mode';
-  import { initClocks, initCopyButtons, initMoreButtons } from '../scripts/ui';
+  import { initClocks, initCopyButtons, initMoreButtons, initToc } from '../scripts/ui';
   import { initPlayer } from '../scripts/player';
   import { initSkillTrace } from '../scripts/skills';
   initCopyButtons();
@@ -35,7 +35,10 @@ import { profile } from '../content/profile';
   initPlayer();
   initMoreButtons();
   const resumeRoot = document.querySelector<HTMLElement>('.resume');
-  if (resumeRoot) initSkillTrace(resumeRoot);
+  if (resumeRoot) {
+    initSkillTrace(resumeRoot);
+    initToc(resumeRoot);
+  }
   const root = document.querySelector<HTMLElement>('.resume');
   if (root) {
     void import('../scripts/build').then(({ startBuild, initBuildKeys }) => {

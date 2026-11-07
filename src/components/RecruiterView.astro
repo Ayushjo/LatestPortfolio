@@ -108,6 +108,14 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     </p>
   </header>
 
+  <nav class="toc" aria-label="Résumé sections" data-toc>
+    <a href="#r-experience">Experience</a>
+    <a href="#r-projects">Projects</a>
+    <a href="#r-skills">Skills</a>
+    <a href="#r-open-source">Open source</a>
+    <a href="#r-contact">Contact</a>
+  </nav>
+
   <ul class="glance" aria-label="At a glance">
     {
       glance.map((g) => (
@@ -121,7 +129,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
 
   <div class="grid">
     <div class="main">
-      <section aria-labelledby="exp-h">
+      <section id="r-experience" class="anchor" aria-labelledby="exp-h">
         <h2 id="exp-h">Experience</h2>
         <ol class="timeline">
           {
@@ -154,7 +162,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
         </ol>
       </section>
 
-      <section aria-labelledby="proj-h">
+      <section id="r-projects" class="anchor" aria-labelledby="proj-h">
         <h2 id="proj-h">Projects</h2>
         <ul class="projects">
           {
@@ -225,7 +233,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     </div>
 
     <aside class="side">
-      <section class="card skills" aria-labelledby="skills-h">
+      <section id="r-skills" class="card skills anchor" aria-labelledby="skills-h">
         <h2 id="skills-h">Skills</h2>
         <p class="trace-hint"><span class="on-hover">Point at</span><span class="on-touch">Tap</span> a skill to see where I used it.</p>
         {
@@ -258,7 +266,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
         }
       </section>
 
-      <section class="card oss" aria-labelledby="oss-h">
+      <section id="r-open-source" class="card oss anchor" aria-labelledby="oss-h">
         <h2 id="oss-h">Open source</h2>
         <p class="oss-sum">
           <strong>{merged.length}</strong> merged · <strong>{resume.openSource.openCount}</strong> in review
@@ -326,7 +334,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     </aside>
   </div>
 
-  <footer class="close" aria-labelledby="close-h">
+  <footer id="r-contact" class="close anchor" aria-labelledby="close-h">
     <h2 id="close-h" class="close-title">Hiring for backend or systems work?</h2>
     <p class="close-lede">{closeLine}</p>
     <div class="close-cta">
@@ -345,7 +353,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
       <span>Numbers as of {snapshot}</span>
       <span>
         Built live by <a href="https://github.com/Ayushjo/MyOwnDevin" target="_blank" rel="noopener">Pullwright</a>'s agents ·
-        press R · after Joel Califa's Swarm, as seen on
+        press R · after Joel Califa's Swarm, as seen on{' '}
         <a href="https://www.beebombshell.com/resume" target="_blank" rel="noopener">Bhavya Verma's résumé</a>
       </span>
     </p>
@@ -1344,6 +1352,77 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     }
   }
 
+  /* Section nav: a slim pill that slides in under the header once the top card is behind you. */
+  .toc {
+    position: fixed;
+    top: 66px;
+    left: 50%;
+    z-index: 20;
+    display: flex;
+    gap: 2px;
+    max-width: calc(100vw - 24px);
+    padding: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg-raised) 90%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px -14px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -8px);
+    transition:
+      opacity 0.35s var(--ease-out),
+      transform 0.45s var(--ease-out);
+  }
+  .toc::-webkit-scrollbar {
+    display: none;
+  }
+  .toc:global(.is-shown),
+  .toc:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+  .toc a {
+    flex: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--fg-dim);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 0.25s var(--ease-out),
+      color 0.25s var(--ease-out);
+  }
+  .toc a:hover {
+    color: var(--fg);
+  }
+  .toc a[aria-current='true'] {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .toc a:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 1px;
+  }
+  .anchor {
+    scroll-margin-top: 120px;
+  }
+  @media (max-width: 560px) {
+    .toc {
+      top: 62px;
+    }
+    .toc a {
+      padding: 6px 10px;
+    }
+  }
+
   .print-contact {
     display: none;
   }
@@ -1380,6 +1459,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     }
     .switch,
     .cta,
+    .toc,
     .close,
     .avatar,
     .status,

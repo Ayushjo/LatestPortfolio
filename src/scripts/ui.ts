@@ -71,3 +71,54 @@ export function initMoreButtons(root: ParentNode = document): void {
     });
   }
 }
+
+/**
+ * The résumé's section nav: shown once the top card has scrolled away, with the section in
+ * view marked as current.
+ */
+export function initToc(root: HTMLElement): void {
+  const toc = root.querySelector<HTMLElement>('[data-toc]');
+  const head = root.querySelector<HTMLElement>('.head');
+  if (!toc || !head || toc.dataset.ready) return;
+  toc.dataset.ready = '1';
+  const links = [...toc.querySelectorAll<HTMLAnchorElement>('a')];
+  const targets = links.map((a) => document.querySelector<HTMLElement>(a.hash)).filter(Boolean) as HTMLElement[];
+
+  new IntersectionObserver(([entry]) => toc.classList.toggle('is-shown', !entry!.isIntersecting), {
+    rootMargin: '-80px 0px 0px 0px',
+  }).observe(head);
+
+  const side = root.querySelector<HTMLElement>('.side');
+  const mark = () => {
+    // The last section whose top has passed the reading line wins. Beside a sticky sidebar its
+    // cards are always "on screen", so only the main column (and the close) count there.
+    const sticky = !!side && getComputedStyle(side).position === 'sticky';
+    const line = innerHeight * 0.35;
+    let current: HTMLElement | null = null;
+    for (const t of targets) {
+      if (sticky && side.contains(t)) continue;
+      if (t.getBoundingClientRect().top <= line) current = t;
+    }
+    if (scrollY + innerHeight >= document.documentElement.scrollHeight - 4) current = targets.at(-1) ?? current;
+    for (const a of links) a.setAttribute('aria-current', String(a.hash === `#${current?.id}`));
+    const active = links.find((a) => a.getAttribute('aria-current') === 'true');
+    if (active && toc.scrollWidth > toc.clientWidth) {
+      const r = active.offsetLeft - (toc.clientWidth - active.offsetWidth) / 2;
+      toc.scrollTo({ left: r, behavior: 'smooth' });
+    }
+  };
+  let queued = false;
+  addEventListener(
+    'scroll',
+    () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        mark();
+      });
+    },
+    { passive: true },
+  );
+  mark();
+}
