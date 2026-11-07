@@ -162,8 +162,8 @@ let buildWired = false;
 function wireBuild() {
   const root = document.querySelector<HTMLElement>('.resume');
   if (!root || getMode() !== 'recruiter') return;
-  void import('./build').then(({ startBuild, initBuildKeys }) => {
-    if (!buildWired) initBuildKeys(root);
+  void import('./build').then(({ startBuild, initBuildKeys, RESUME_BUILD }) => {
+    if (!buildWired) initBuildKeys(root, RESUME_BUILD);
     buildWired = true;
     void startBuild(root);
   });

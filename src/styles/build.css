@@ -3,7 +3,7 @@
  * layer; the résumé itself is only clipped while a block is being written, never removed.
  */
 
-:root[data-prebuild] .resume {
+:root[data-prebuild] [data-buildable] {
   visibility: hidden;
 }
 [data-building] [data-b] {
@@ -385,7 +385,7 @@
 }
 
 @media print {
-  :root[data-prebuild] .resume {
+  :root[data-prebuild] [data-buildable] {
     visibility: visible !important;
   }
   .build-layer,

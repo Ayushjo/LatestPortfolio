@@ -42,8 +42,8 @@ import { profile } from '../content/profile';
   }
   const root = document.querySelector<HTMLElement>('.resume');
   if (root) {
-    void import('../scripts/build').then(({ startBuild, initBuildKeys }) => {
-      initBuildKeys(root);
+    void import('../scripts/build').then(({ startBuild, initBuildKeys, RESUME_BUILD }) => {
+      initBuildKeys(root, RESUME_BUILD);
       void startBuild(root);
     });
   }

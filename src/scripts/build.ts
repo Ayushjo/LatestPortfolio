@@ -9,50 +9,65 @@
  * only clipped until their turn, and anything below the fold is never touched.
  */
 
-const SEEN_KEY = 'resume-built-v1';
 const PULLWRIGHT = 'https://github.com/Ayushjo/MyOwnDevin';
 
-/** Blocks that get typed by an executor, in reading order. */
-const TYPED = [
-  'h1',
-  '.role',
-  '.summary',
-  '.facts dd',
-  '.glance .value',
-  '.role-head h3',
-  '.impact',
-  '.points li',
-  '.project h3',
-  '.tagline',
-  '.side h2',
-  '.pr-title',
-  '.edu h3',
-].join(',');
-/** Small print that simply fades in when its box is built. */
-const QUIET = [
-  '.avatar',
-  '.status',
-  '.where',
-  '.cta',
-  '.facts dt',
-  '.glance .label',
-  '.main h2',
-  '.when',
-  '.product',
-  '.role-stack',
-  '.badge',
-  '.stats',
-  '.tags',
-  '.links',
-  '.skill-group',
-  '.trace-hint',
-  '.repo',
-  '.diff',
-  '.note',
-  '.oss-sum',
-  '.edu p',
-].join(',');
-const BOXES = '.head, .glance, .role-item, .project, .side .card';
+/** What a page asks Pullwright to build. */
+export interface BuildSpec {
+  /** localStorage key that marks this page as already built once. */
+  seenKey: string;
+  /** The issue in the bar: "#n title". */
+  issue: number;
+  title: string;
+  /** Blocks typed by an executor, small print that fades in, and boxes the planner draws. */
+  typed: string;
+  quiet: string;
+  boxes: string;
+}
+
+export const RESUME_BUILD: BuildSpec = {
+  seenKey: 'resume-built-v1',
+  issue: 1,
+  title: 'Render résumé for a recruiter',
+  typed: [
+    'h1',
+    '.role',
+    '.summary',
+    '.facts dd',
+    '.glance .value',
+    '.role-head h3',
+    '.impact',
+    '.points li',
+    '.project h3',
+    '.tagline',
+    '.side h2',
+    '.pr-title',
+    '.edu h3',
+  ].join(','),
+  quiet: [
+    '.avatar',
+    '.status',
+    '.where',
+    '.cta',
+    '.facts dt',
+    '.glance .label',
+    '.main h2',
+    '.when',
+    '.product',
+    '.role-stack',
+    '.badge',
+    '.stats',
+    '.tags',
+    '.links',
+    '.skill-group',
+    '.trace-hint',
+    '.repo',
+    '.diff',
+    '.note',
+    '.oss-sum',
+    '.edu p',
+  ].join(','),
+  boxes: '.head, .glance, .role-item, .project, .side .card',
+};
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const CURSOR_SVG =
@@ -82,13 +97,13 @@ const docRect = (el: Element): Rect => {
 };
 
 /** Whether the build should start by itself on this visit (Base.astro's head script mirrors this). */
-export function shouldAutoBuild(): boolean {
+export function shouldAutoBuild(spec: BuildSpec): boolean {
   const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('print').matches) return false;
   if (nav.webdriver || /HeadlessChrome|Lighthouse|bot|crawl|spider/i.test(nav.userAgent)) return false;
   if (nav.connection?.saveData) return false;
   try {
-    return !localStorage.getItem(SEEN_KEY);
+    return !localStorage.getItem(spec.seenKey);
   } catch {
     return false;
   }
@@ -102,9 +117,12 @@ export interface Build {
 
 let current: Build | null = null;
 let hud: HTMLElement | null = null;
+/** The page and spec the Rebuild button rebuilds. */
+let target: { root: HTMLElement; spec: BuildSpec } | null = null;
 
 /** The bottom bar: created once, reused across runs; idle it is just "↻ Rebuild". */
-function ensureHud(root: HTMLElement): HTMLElement {
+function ensureHud(root: HTMLElement, spec: BuildSpec): HTMLElement {
+  target = { root, spec };
   if (hud && document.body.contains(hud)) return hud;
   hud = document.createElement('div');
   hud.className = 'build-hud is-idle';
@@ -122,19 +140,21 @@ function ensureHud(root: HTMLElement): HTMLElement {
   document.body.append(hud);
   hud.querySelector('.skip')!.addEventListener('click', () => current?.finish());
   hud.querySelector('.rebuild')!.addEventListener('click', () => {
+    if (!target) return;
+    const { root: r, spec: s } = target;
     scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-    requestAnimationFrame(() => buildResume(root));
+    requestAnimationFrame(() => buildPage(r, s));
   });
   return hud;
 }
 
-export function buildResume(root: HTMLElement): Build {
+export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   current?.finish();
-  const bar = ensureHud(root);
+  const bar = ensureHud(root, spec);
   const msg = bar.querySelector<HTMLElement>('.msg')!;
   const fill = bar.querySelector<HTMLElement>('.bar i')!;
   try {
-    localStorage.setItem(SEEN_KEY, '1');
+    localStorage.setItem(spec.seenKey, '1');
   } catch {
     /* fine */
   }
@@ -146,9 +166,9 @@ export function buildResume(root: HTMLElement): Build {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && r.top + scrollY < limit && r.bottom + scrollY > top;
   };
-  const boxes = [...root.querySelectorAll<HTMLElement>(BOXES)].filter(inView);
-  const typed = [...root.querySelectorAll<HTMLElement>(TYPED)].filter(inView);
-  const quiet = [...root.querySelectorAll<HTMLElement>(QUIET)].filter(inView);
+  const boxes = [...root.querySelectorAll<HTMLElement>(spec.boxes)].filter(inView);
+  const typed = [...root.querySelectorAll<HTMLElement>(spec.typed)].filter(inView);
+  const quiet = [...root.querySelectorAll<HTMLElement>(spec.quiet)].filter(inView);
   const boxOf = (el: Element) => boxes.findIndex((b) => b.contains(el));
 
   // ---- 2. Hide what will be built (visually only), and lay down the overlay. ----
@@ -302,7 +322,7 @@ export function buildResume(root: HTMLElement): Build {
   const t0 = performance.now();
   bar.classList.remove('is-idle', 'is-done');
   fill.style.setProperty('--p', '0');
-  msg.innerHTML = `<em>issue #1 ·</em> Render résumé for a recruiter`;
+  msg.innerHTML = `<em>issue #${spec.issue} ·</em> ${spec.title}`;
   at(PLAN_START - 60, () => {
     phase = 'planning';
     msg.innerHTML = `<em>planner ·</em> laying out ${boxes.length} blocks`;
@@ -337,7 +357,7 @@ export function buildResume(root: HTMLElement): Build {
     phase = 'merged';
     bar.classList.add('is-done');
     fill.style.setProperty('--p', '1');
-    msg.innerHTML = `<em>PR #1 merged ·</em> +${total} −0 · ${secs} s · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
+    msg.innerHTML = `<em>PR #${spec.issue} merged ·</em> +${total} −0 · ${secs} s · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
     setTimeout(() => current === build && bar.classList.add('is-idle'), 2600);
     resolveDone();
   };
@@ -369,7 +389,7 @@ export function buildResume(root: HTMLElement): Build {
 }
 
 /** Keyboard: R rebuilds (outside text fields); Esc is handled by the skip listener. */
-export function initBuildKeys(root: HTMLElement): void {
+export function initBuildKeys(root: HTMLElement, spec: BuildSpec): void {
   addEventListener('keydown', (e) => {
     if (e.key !== 'r' && e.key !== 'R') return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -377,29 +397,29 @@ export function initBuildKeys(root: HTMLElement): void {
     if (t.closest?.('input, textarea, [contenteditable]')) return;
     if (!root.offsetParent && getComputedStyle(root).display === 'none') return;
     scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-    requestAnimationFrame(() => buildResume(root));
+    requestAnimationFrame(() => buildPage(root, spec));
   });
 }
 
 /** Offer the Rebuild pill without running (e.g. for reduced motion). */
-export function showRebuild(root: HTMLElement): void {
-  ensureHud(root).classList.add('is-idle');
+export function showRebuild(root: HTMLElement, spec: BuildSpec): void {
+  ensureHud(root, spec).classList.add('is-idle');
 }
 
 /**
  * Wire the build to a résumé on the page: run it on a first visit once fonts and layout have
  * settled, otherwise just offer the Rebuild pill.
  */
-export async function startBuild(root: HTMLElement): Promise<void> {
+export async function startBuild(root: HTMLElement, spec: BuildSpec = RESUME_BUILD): Promise<void> {
   await document.fonts.ready;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   // Only build while the page is still held back; if the hold already lapsed, the résumé is on
   // screen and building it now would make it vanish and reappear.
   const held = 'prebuild' in document.documentElement.dataset;
-  if (held && shouldAutoBuild() && scrollY < innerHeight * 0.5) buildResume(root);
+  if (held && shouldAutoBuild(spec) && scrollY < innerHeight * 0.5) buildPage(root, spec);
   else {
     delete document.documentElement.dataset.prebuild;
-    showRebuild(root);
+    showRebuild(root, spec);
   }
 }
 

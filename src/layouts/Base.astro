@@ -25,6 +25,8 @@ interface Props {
   /** Share card, relative to the site root. */
   image?: string;
   imageAlt?: string;
+  /** First-visit key for the Pullwright build on this page (see scripts/build.ts). */
+  buildKey?: string;
 }
 
 const {
@@ -33,6 +35,7 @@ const {
   mode,
   image = '/og-v3.png',
   imageAlt = 'Ayush Singh, systems engineer — portrait in silver particles',
+  buildKey = 'resume-built-v1',
 } = Astro.props;
 
 /** Versioned file names, so link-preview caches (X keeps them ~7 days) fetch new images. */
@@ -82,7 +85,7 @@ const jsonLd = {
     <link rel="preload" href={heroFont} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={taglineFont} as="font" type="font/woff2" crossorigin />
 
-    <script is:inline define:vars={{ pinned: mode ?? null }}>
+    <script is:inline define:vars={{ pinned: mode ?? null, buildKey }}>
       (function () {
         var modes = ['immersive', 'casual', 'recruiter'];
         // A pinned page wins, then a shared link's ?view= (for this visit only), then the saved choice.
@@ -103,7 +106,7 @@ const jsonLd = {
           var nav = navigator;
           if (
             m === 'recruiter' &&
-            !localStorage.getItem('resume-built-v1') &&
+            !localStorage.getItem(buildKey) &&
             !matchMedia('(prefers-reduced-motion: reduce)').matches &&
             !nav.webdriver &&
             !/HeadlessChrome|Lighthouse|bot|crawl|spider/i.test(nav.userAgent) &&
