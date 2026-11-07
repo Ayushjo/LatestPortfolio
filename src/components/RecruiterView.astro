@@ -6,6 +6,12 @@ import github from '../data/github.json';
 import { formatDate, getPosts } from '../lib/writing';
 import { demoFor } from '../lib/demos';
 
+interface Props {
+  /** On /resume the page is only this view, so the way out is a link rather than a mode switch. */
+  standalone?: boolean;
+}
+const { standalone = false } = Astro.props;
+
 const work = experience.filter((r) => r.kind === 'work');
 const education = experience.filter((r) => r.kind === 'education');
 const merged = github.prs.merged;
@@ -33,7 +39,14 @@ const glance = [
 
 <article class="resume recruiter-only" aria-labelledby="resume-name">
   <p class="switch">
-    The quick version. <button type="button" data-set-mode="immersive">See the full experience →</button>
+    The quick version.{' '}
+    {
+      standalone ? (
+        <a href="/?view=immersive">See the full experience →</a>
+      ) : (
+        <button type="button" data-set-mode="immersive">See the full experience →</button>
+      )
+    }
   </p>
 
   <header class="card head">
@@ -221,6 +234,7 @@ const glance = [
     font-size: 0.74rem;
     color: var(--fg-dim);
   }
+  .switch a,
   .switch button {
     padding: 0;
     border: 0;
@@ -228,6 +242,7 @@ const glance = [
     background: none;
     font: inherit;
     color: var(--fg);
+    text-decoration: none;
     cursor: pointer;
   }
 

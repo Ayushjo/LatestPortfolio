@@ -20,15 +20,23 @@ import { profile } from '../content/profile';
 interface Props {
   title?: string;
   description?: string;
+  /** Pins the page to one mode (e.g. /resume), ignoring the visitor's saved choice. */
+  mode?: 'immersive' | 'casual' | 'recruiter';
+  /** Share card, relative to the site root. */
+  image?: string;
+  imageAlt?: string;
 }
 
 const {
   title = `${profile.name} — ${profile.role}`,
   description = profile.bio.recruiter,
+  mode,
+  image = '/og-v3.png',
+  imageAlt = 'Ayush Singh, systems engineer — portrait in silver particles',
 } = Astro.props;
 
-/** Versioned so link-preview caches (X keeps them ~7 days) fetch a new image when it changes. */
-const ogImage = new URL('/og-v3.png', Astro.site).href;
+/** Versioned file names, so link-preview caches (X keeps them ~7 days) fetch new images. */
+const ogImage = new URL(image, Astro.site).href;
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -64,21 +72,25 @@ const jsonLd = {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content="Ayush Singh, systems engineer — portrait in silver particles" />
-    <meta property="og:image:alt" content="Ayush Singh, systems engineer — portrait in silver particles" />
+    <meta name="twitter:image:alt" content={imageAlt} />
+    <meta property="og:image:alt" content={imageAlt} />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <link rel="alternate" type="application/rss+xml" title="Writing" href="/rss.xml" />
 
     <link rel="preload" href={heroFont} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={taglineFont} as="font" type="font/woff2" crossorigin />
 
-    <script is:inline>
+    <script is:inline define:vars={{ pinned: mode ?? null }}>
       (function () {
         var modes = ['immersive', 'casual', 'recruiter'];
-        var m = null;
-        try {
-          m = localStorage.getItem('mode');
-        } catch (e) {}
+        // A pinned page wins, then a shared link's ?view= (for this visit only), then the saved choice.
+        var view = new URLSearchParams(location.search).get('view');
+        var m = pinned || (modes.indexOf(view) !== -1 ? view : null);
+        if (!m) {
+          try {
+            m = localStorage.getItem('mode');
+          } catch (e) {}
+        }
         if (modes.indexOf(m) === -1) {
           m = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'recruiter' : 'immersive';
         }
