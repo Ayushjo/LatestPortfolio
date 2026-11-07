@@ -15,6 +15,8 @@ export interface Role {
   links?: { label: string; href: string }[];
   /** Particle shape key: the organisation's logo, a matte from scripts/logo-matte.swift. */
   shape: string;
+  /** Technologies named in the points above, for the résumé's chips. */
+  stack?: string[];
 }
 
 /** Newest first. */
@@ -34,6 +36,7 @@ export const experience: Role[] = [
       'Streams tokens over SSE with per-user Redis rate limits and rule-based fallback; compliance guardrails and prompt-injection defences treat all external data as untrusted.',
       'Integrated the Python/FastAPI MT5 bridge with the Node backend, and fixed a race on the broker’s single-terminal lock that caused intermittent 500s.',
     ],
+    stack: ['Node.js', 'Python', 'FastAPI', 'Redis', 'SSE', 'Groq', 'MetaTrader 5'],
   },
   {
     id: 'vedaai',
@@ -50,6 +53,7 @@ export const experience: Role[] = [
       'Built backend services and REST APIs across the platform, owning features end-to-end with the founding team.',
       'Reworked UI/UX across key product surfaces for usability and consistency.',
     ],
+    stack: ['Google Classroom API', 'REST APIs'],
   },
   {
     id: 'cineprism',
@@ -66,6 +70,7 @@ export const experience: Role[] = [
       'AWS with Docker CI/CD, Cashfree payments, SES and BullMQ queues.',
       'Cut monthly infra cost 60% ($47 → $16–20) by dropping the ALB and NAT Gateway for one EC2 instance with self-hosted Redis and Nginx.',
     ],
+    stack: ['AWS EC2', 'Docker', 'Redis', 'Nginx', 'BullMQ', 'SES', 'Cashfree'],
     stats: [
       { value: '36k+', label: 'active users' },
       { value: '−60%', label: 'monthly AWS bill' },
