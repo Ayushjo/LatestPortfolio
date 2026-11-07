@@ -8,6 +8,7 @@ import { readBeats, scrollToTarget, storyTop, startSmoothScroll, stopSmoothScrol
 import { initSlider } from './slider';
 import { initClocks, initCopyButtons } from './ui';
 import { initPlayer } from './player';
+import { initSkillTrace } from './skills';
 
 const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
 const heroTitle = document.querySelector<HTMLElement>('[data-hero-title]');
@@ -23,6 +24,8 @@ initDemos(() => experience, beats);
 initCopyButtons();
 initClocks();
 initPlayer();
+const resumeEl = document.querySelector<HTMLElement>('.resume');
+if (resumeEl) initSkillTrace(resumeEl);
 for (const btn of document.querySelectorAll<HTMLElement>('[data-set-mode]')) {
   btn.addEventListener('click', () => setMode(btn.dataset.setMode as Mode));
 }

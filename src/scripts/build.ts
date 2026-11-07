@@ -45,6 +45,7 @@ const QUIET = [
   '.tags',
   '.links',
   '.skill-group',
+  '.trace-hint',
   '.repo',
   '.diff',
   '.note',

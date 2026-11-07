@@ -1,5 +1,5 @@
 ---
-import { resume } from '../content/resume';
+import { resume, skillUses } from '../content/resume';
 import '../styles/build.css';
 import { formatDate, getPosts } from '../lib/writing';
 import { demoFor, thumbFor } from '../lib/demos';
@@ -123,7 +123,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
         <ol class="timeline">
           {
             work.map((r) => (
-              <li class="role-item">
+              <li class="role-item" data-trace={`role-${r.id}`}>
                 <div class="role-head">
                   <h3>
                     {r.logo && <img class="logo" src={r.logo} alt="" width="96" height="96" loading="lazy" decoding="async" />}
@@ -158,7 +158,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
             projects.map((p, i) => {
               const lead = i < LEADS && thumbFor(p);
               return (
-                <li class:list={['project', p.tier === 'featured' && 'featured', lead && 'lead']}>
+                <li class:list={['project', p.tier === 'featured' && 'featured', lead && 'lead']} data-trace={`project-${p.slug}`}>
                   {lead && (
                     <a
                       class="shot"
@@ -224,14 +224,31 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     <aside class="side">
       <section class="card skills" aria-labelledby="skills-h">
         <h2 id="skills-h">Skills</h2>
+        <p class="trace-hint"><span class="on-hover">Point at</span><span class="on-touch">Tap</span> a skill to see where I used it.</p>
         {
           Object.entries(resume.skills).map(([group, list]) => (
             <div class="skill-group">
               <h3>{group}</h3>
               <ul class="chips">
-                {list.map((s) => (
-                  <li>{s}</li>
-                ))}
+                {list.map((s) => {
+                  const hits = skillUses[s] ?? [];
+                  return hits.length ? (
+                    <li>
+                      <button
+                        type="button"
+                        class="chip-trace"
+                        data-hits={hits.join(' ')}
+                        aria-pressed="false"
+                        aria-label={`${s}, used in ${hits.length} ${hits.length === 1 ? 'place' : 'places'} on this page`}
+                      >
+                        {s}
+                        <span class="hits" aria-hidden="true">{hits.length}</span>
+                      </button>
+                    </li>
+                  ) : (
+                    <li>{s}</li>
+                  );
+                })}
               </ul>
             </div>
           ))
@@ -1030,6 +1047,82 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     font-size: 0.78rem;
     color: var(--fg-dim);
   }
+  .chips li:has(.chip-trace) {
+    padding: 0;
+    border: 0;
+  }
+  .chip-trace {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 6px 2px 9px;
+    border: 1px solid color-mix(in srgb, var(--fg) 26%, transparent);
+    border-radius: 999px;
+    background: none;
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--fg);
+    cursor: pointer;
+    transition:
+      background-color 0.25s var(--ease-out),
+      color 0.25s var(--ease-out),
+      border-color 0.25s var(--ease-out);
+  }
+  .chip-trace .hits {
+    min-width: 15px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--fg) 9%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    line-height: 15px;
+    text-align: center;
+  }
+  .chip-trace:hover,
+  .chip-trace:focus-visible,
+  .chip-trace[aria-pressed='true'] {
+    border-color: var(--fg);
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .chip-trace:hover .hits,
+  .chip-trace:focus-visible .hits,
+  .chip-trace[aria-pressed='true'] .hits {
+    background: color-mix(in srgb, var(--bg) 22%, transparent);
+  }
+  .chip-trace:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
+  }
+  .trace-hint .on-touch {
+    display: none;
+  }
+  @media (hover: none) {
+    .trace-hint .on-hover {
+      display: none;
+    }
+    .trace-hint .on-touch {
+      display: inline;
+    }
+  }
+  .trace-hint {
+    margin: -8px 0 14px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--fg-dim);
+  }
+  /* Tracing a skill: everything that didn't use it steps back. */
+  [data-trace] {
+    transition:
+      opacity 0.35s var(--ease-out),
+      box-shadow 0.35s var(--ease-out);
+  }
+  .resume:global(.is-tracing) [data-trace]:not(:global(.is-hit)) {
+    opacity: 0.28;
+  }
+  .resume:global(.is-tracing) .project:global(.is-hit) {
+    box-shadow: 0 0 0 1.5px var(--fg);
+  }
   .prs {
     list-style: none;
     margin: 0;
@@ -1497,6 +1590,17 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
       padding: 0;
       border: 0;
       font-size: 8.5pt;
+    }
+    .trace-hint,
+    .chip-trace .hits {
+      display: none;
+    }
+    .chip-trace {
+      display: inline;
+      padding: 0;
+      border: 0;
+      font-size: 8.5pt;
+      color: inherit;
     }
     .chips li + li::before {
       content: ' · ';

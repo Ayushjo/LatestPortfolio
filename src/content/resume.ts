@@ -74,3 +74,38 @@ export const resume = {
 };
 
 export type Resume = typeof resume;
+
+/**
+ * Where each skill was used: the roles and projects whose own text names it (or a close alias),
+ * so the résumé can show a skill against real work instead of as a bare list.
+ */
+const ALIASES: Record<string, string[]> = {
+  'Node.js': ['node\\.js', 'node'],
+  Python: ['python', 'fastapi', 'flask'],
+  Rust: ['rust', 'tokio'],
+  PostgreSQL: ['postgresql', 'postgres'],
+  AWS: ['aws', 'bedrock', 'lambda', 'dynamodb', 'ec2', 'eventbridge'],
+  'Next.js': ['next\\.js'],
+  'Prisma ORM': ['prisma'],
+  'Socket.IO': ['socket\\.io'],
+  'C++': ['c\\+\\+'],
+  RAG: ['rag'],
+  'scikit-learn': ['scikit-learn'],
+};
+const pattern = (skill: string) =>
+  new RegExp(`(^|[^A-Za-z0-9])(${(ALIASES[skill] ?? [skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')]).join('|')})(?=$|[^A-Za-z0-9])`, 'i');
+
+const corpus = [
+  ...resume.work.map((r) => ({ id: `role-${r.id}`, text: [r.product, ...r.points, ...(r.stack ?? [])].join(' ') })),
+  ...resume.projects.map((p) => ({
+    id: `project-${p.slug}`,
+    text: [p.tagline, p.summary, ...p.metrics, ...p.tags].join(' '),
+  })),
+];
+
+export const skillUses: Record<string, string[]> = Object.fromEntries(
+  Object.values(resume.skills)
+    .flat()
+    .map((skill) => [skill, corpus.filter((c) => pattern(skill).test(c.text)).map((c) => c.id)]),
+);
+
