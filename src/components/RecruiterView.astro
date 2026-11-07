@@ -827,6 +827,19 @@ const glance = resume.glance;
       line-height: 1.42;
       color: #111;
     }
+    /* Static and unspaced, so the PDF's text layer reads in page order with real word gaps
+       (positioned boxes are written out of order; tight tracking swallows spaces). */
+    .resume,
+    .role-item,
+    .timeline,
+    .side {
+      position: static !important;
+    }
+    h1,
+    h3 {
+      letter-spacing: 0 !important;
+      word-spacing: 0.12em;
+    }
     .switch,
     .cta,
     .avatar,

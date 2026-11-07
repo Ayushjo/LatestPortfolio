@@ -12,7 +12,8 @@ export const profile = {
     github: 'https://github.com/Ayushjo',
     linkedin: 'https://linkedin.com/in/ayush-singh',
     twitter: 'https://x.com/_wickyjohn',
-    resume: 'https://drive.google.com/file/d/1JcHt_t-qgagu4bFeV4gToMPt9czSCyn8/view',
+    // Generated from the /resume page by scripts/resume-pdf.mjs (pnpm resume:pdf).
+    resume: '/ayush-singh-resume.pdf',
   },
   tagline: {
     immersive: 'I build systems that move data — fast, and beautifully.',

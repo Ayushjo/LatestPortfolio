@@ -19,6 +19,7 @@ pnpm install
 pnpm dev          # http://localhost:4321
 pnpm build        # type-check + static build into dist/
 pnpm data         # refresh src/data/github.json from GitHub
+pnpm resume:pdf          # rebuild public/ayush-singh-resume.pdf from the /resume page
 sh scripts/og/render.sh   # re-render the share card, public/og-v3.png
 swift scripts/logo-matte.swift <logo> public/logos/<name>.png 640   # a logo → particle shape (see the script for options)
 ```

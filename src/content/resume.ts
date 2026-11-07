@@ -44,8 +44,7 @@ export const resume = {
     x: profile.links.twitter,
   },
 
-  /** Served by the build (see scripts/resume-pdf.mjs). */
-  pdf: '/ayush-singh-resume.pdf',
+  pdf: profile.links.resume,
 
   /** The four numbers a skim should catch. */
   glance: [
