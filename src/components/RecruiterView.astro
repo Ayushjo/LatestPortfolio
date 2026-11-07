@@ -27,6 +27,14 @@ const emphasize = (text: string) =>
     );
 
 const glance = resume.glance;
+const { availability: av, timezone: tz } = resume;
+const closeLine = `${av.start}: ${av.roles}, ${av.where.toLowerCase()} from ${resume.location.split(',')[0]} (${tz.label}). Email is the quickest way to reach me.`;
+const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Asia/Kolkata',
+});
 ---
 
 <article class="resume recruiter-only" aria-labelledby="resume-name">
@@ -243,6 +251,26 @@ const glance = resume.glance;
       }
     </aside>
   </div>
+
+  <footer class="close" aria-labelledby="close-h">
+    <h2 id="close-h" class="close-title">Hiring for backend or systems work?</h2>
+    <p class="close-lede">{closeLine}</p>
+    <div class="close-cta">
+      <div class="mail">
+        <a class="btn primary" href={`mailto:${resume.contact.email}`}>{resume.contact.email}</a>
+        <button class="btn copy" type="button" data-copy={resume.contact.email} aria-label="Copy email address" title="Copy">
+          <svg class="idle" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6"></rect><path d="M10.5 5V3.6c0-.9-.7-1.6-1.6-1.6H3.6C2.7 2 2 2.7 2 3.6v5.3c0 .9.7 1.6 1.6 1.6H5"></path></svg>
+          <svg class="done" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.6l3 3 6.6-7"></path></svg>
+        </button>
+      </div>
+      <a class="btn" href={resume.pdf} target="_blank" rel="noopener">Résumé PDF ↗</a>
+      <a class="btn" href={resume.contact.linkedin} target="_blank" rel="noopener">LinkedIn ↗</a>
+    </div>
+    <p class="colophon">
+      <span>Also as <a href="/resume.json">resume.json</a> · <a href="/llms.txt">llms.txt</a></span>
+      <span>Numbers as of {snapshot}</span>
+    </p>
+  </footer>
 </article>
 
 <style>
@@ -779,6 +807,7 @@ const glance = resume.glance;
     .pdf {
       grid-column: 1 / -1;
     }
+
     .projects {
       grid-template-columns: 1fr;
     }
@@ -803,6 +832,75 @@ const glance = resume.glance;
   @media (prefers-reduced-motion: reduce) {
     .dot::after {
       animation: none;
+    }
+  }
+
+
+  /* The close: one question, every way to answer it. */
+  .close {
+    margin-top: 72px;
+    padding: 56px 0 8px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .close-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 1.4rem + 3vw, 3.6rem);
+    line-height: 1;
+    letter-spacing: -0.015em;
+    text-transform: none;
+    color: var(--fg);
+  }
+  .close-lede {
+    max-width: 52ch;
+    margin: 16px auto 0;
+    color: var(--fg-dim);
+  }
+  .close-cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 28px;
+  }
+  .close-cta .mail {
+    display: grid;
+    grid-template-columns: auto auto;
+  }
+  .colophon {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 22px;
+    margin: 40px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+  }
+  .colophon a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+  }
+  .colophon a:hover {
+    color: var(--fg);
+  }
+  @media (max-width: 640px) {
+    .close-cta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .close-cta .mail {
+      grid-column: 1 / -1;
+      grid-template-columns: 1fr auto;
+    }
+    .close-cta .btn.primary {
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
@@ -842,6 +940,7 @@ const glance = resume.glance;
     }
     .switch,
     .cta,
+    .close,
     .avatar,
     .status,
     .writing,
