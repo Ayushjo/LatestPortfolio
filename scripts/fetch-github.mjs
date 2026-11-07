@@ -8,8 +8,8 @@ import { dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const USER = 'Ayushjo';
-/** Collaborations that are really team projects, not open-source contributions. */
-const NOT_OSS = new Set(['fahmmin/sahaayak-ai']);
+/** Public repos that aren't open-source contributions (team projects, club housekeeping). */
+const NOT_OSS = new Set(['fahmmin/sahaayak-ai', 'Student-Activity-Center-IIIT-NR/Money_Matters_Club']);
 const SPOTLIGHT = 'FreeCAD/FreeCAD';
 const OUT = posix.join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'github.json');
 
@@ -66,7 +66,9 @@ async function pullRequests() {
     });
 
   const merged = [];
-  for (const item of await search(`author:${USER} type:pr is:merged`)) {
+  // is:public matters: the token can see private (client) repos, and nothing from those may
+  // ever reach the site.
+  for (const item of await search(`author:${USER} type:pr is:merged is:public`)) {
     const repo = item.repository_url.split('/repos/')[1];
     const { body: pr } = await rest(`repos/${repo}/pulls/${item.number}`);
     const { body: files } = await rest(`repos/${repo}/pulls/${item.number}/files`);
@@ -85,7 +87,7 @@ async function pullRequests() {
   }
   merged.sort((a, b) => a.mergedAt.localeCompare(b.mergedAt));
 
-  const open = (await search(`author:${USER} type:pr is:open`)).map((i) => ({
+  const open = (await search(`author:${USER} type:pr is:open is:public`)).map((i) => ({
     repo: i.repository_url.split('/repos/')[1],
     number: i.number,
     title: i.title,

@@ -6,7 +6,7 @@ import { initDemos } from './demo';
 import { initRail } from './rail';
 import { readBeats, scrollToTarget, storyTop, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
-import { initClocks, initCopyButtons } from './ui';
+import { initClocks, initCopyButtons, initMoreButtons } from './ui';
 import { initPlayer } from './player';
 import { initSkillTrace } from './skills';
 
@@ -24,6 +24,7 @@ initDemos(() => experience, beats);
 initCopyButtons();
 initClocks();
 initPlayer();
+initMoreButtons();
 const resumeEl = document.querySelector<HTMLElement>('.resume');
 if (resumeEl) initSkillTrace(resumeEl);
 for (const btn of document.querySelectorAll<HTMLElement>('[data-set-mode]')) {

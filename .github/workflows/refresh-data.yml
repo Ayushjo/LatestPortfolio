@@ -1,0 +1,75 @@
+# Keeps the site's GitHub numbers (contributions, merged and open PRs) current: refreshes
+# src/data/github.json every morning, and when anything real changed, rebuilds the résumé PDF
+# and commits both. Vercel deploys the commit.
+#
+# Token: the workflow's own GITHUB_TOKEN works for public data. To include private
+# contributions in the calendar, add a read-only fine-grained token as the DATA_TOKEN secret.
+name: Refresh GitHub data
+
+on:
+  schedule:
+    - cron: '30 0 * * *' # 06:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Snapshot GitHub data
+        run: pnpm data
+        env:
+          GITHUB_TOKEN: ${{ secrets.DATA_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # The snapshot always gets a new timestamp (and is one line of JSON, so a line diff can't
+      # tell them apart); compare the data itself, minus the timestamp.
+      - name: Anything new?
+        id: diff
+        run: |
+          if node -e '
+            const { execSync } = require("node:child_process");
+            const strip = (s) => { const d = JSON.parse(s); delete d.generatedAt; return JSON.stringify(d); };
+            const before = strip(execSync("git show HEAD:src/data/github.json", { encoding: "utf8" }));
+            const after = strip(require("node:fs").readFileSync("src/data/github.json", "utf8"));
+            process.exit(before === after ? 0 : 1);
+          '; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            git checkout -- src/data/github.json
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rebuild the résumé PDF
+        if: steps.diff.outputs.changed == 'true'
+        run: pnpm resume:pdf
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/data/github.json public/ayush-singh-resume.pdf
+          git commit -m 'Refresh GitHub numbers'
+          git push

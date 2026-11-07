@@ -56,3 +56,18 @@ export function initClocks(root: ParentNode = document): void {
   tick();
   setInterval(tick, 15_000);
 }
+
+/** "Show all N" on the résumé's open-source list. */
+export function initMoreButtons(root: ParentNode = document): void {
+  for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-more-prs]')) {
+    const list = document.getElementById(btn.getAttribute('aria-controls')!);
+    if (!list || btn.dataset.ready) continue;
+    btn.dataset.ready = '1';
+    btn.addEventListener('click', () => {
+      list.classList.add('is-all');
+      btn.setAttribute('aria-expanded', 'true');
+      btn.hidden = true;
+      list.querySelector<HTMLElement>('li:nth-child(7) a')?.focus();
+    });
+  }
+}

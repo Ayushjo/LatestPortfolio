@@ -49,6 +49,7 @@ const QUIET = [
   '.repo',
   '.diff',
   '.note',
+  '.oss-sum',
   '.edu p',
 ].join(',');
 const BOXES = '.head, .glance, .role-item, .project, .side .card';

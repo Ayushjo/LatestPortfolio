@@ -16,6 +16,9 @@ const projects = resume.projects;
 /** The first three get a wide card with a still from their demo. */
 const LEADS = 3;
 const merged = resume.openSource.merged;
+const newestFirst = [...merged].sort((a, b) => b.mergedAt.localeCompare(a.mergedAt));
+/** The sidebar shows the newest few; the rest are a click away (all of them print). */
+const PRS_SHOWN = 6;
 const posts = (await getPosts()).slice(0, 3);
 
 /** Bold the numbers in a line so a skim catches the impact (escapes HTML first). */
@@ -257,9 +260,12 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
 
       <section class="card oss" aria-labelledby="oss-h">
         <h2 id="oss-h">Open source</h2>
-        <ul class="prs">
+        <p class="oss-sum">
+          <strong>{merged.length}</strong> merged · <strong>{resume.openSource.openCount}</strong> in review
+        </p>
+        <ul class="prs" id="oss-prs" data-shown={PRS_SHOWN}>
           {
-            merged.map((p) => (
+            newestFirst.map((p) => (
               <li>
                 <a href={p.url} target="_blank" rel="noopener">
                   <span class="repo">
@@ -274,7 +280,13 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
             ))
           }
         </ul>
-        <p class="note">{resume.openSource.openCount} more in review</p>
+        {
+          merged.length > PRS_SHOWN && (
+            <button type="button" class="more-prs" aria-controls="oss-prs" aria-expanded="false" data-more-prs>
+              Show all {merged.length}
+            </button>
+          )
+        }
       </section>
 
       <section class="card edu-card" aria-labelledby="edu-h">
@@ -338,6 +350,8 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
       </span>
     </p>
   </footer>
+
+  <noscript><style>.prs li { display: block !important; } .more-prs { display: none; }</style></noscript>
 
   <dialog class="player" data-player aria-label="Project demo">
     <div class="player-frame">
@@ -1123,6 +1137,36 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
   .resume:global(.is-tracing) .project:global(.is-hit) {
     box-shadow: 0 0 0 1.5px var(--fg);
   }
+  .oss-sum {
+    margin: -8px 0 12px;
+    font-size: 0.86rem;
+    color: var(--fg-dim);
+  }
+  .oss-sum strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .prs[data-shown='6']:not(:global(.is-all)) li:nth-child(n + 7) {
+    display: none;
+  }
+  .more-prs {
+    margin-top: 10px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .more-prs:hover {
+    border-color: var(--fg);
+  }
+  .more-prs:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
+  }
   .prs {
     list-style: none;
     margin: 0;
@@ -1592,8 +1636,12 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
       font-size: 8.5pt;
     }
     .trace-hint,
-    .chip-trace .hits {
+    .chip-trace .hits,
+    .more-prs {
       display: none;
+    }
+    .prs li:nth-child(n) {
+      display: block !important;
     }
     .chip-trace {
       display: inline;

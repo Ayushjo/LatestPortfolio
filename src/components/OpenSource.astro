@@ -15,6 +15,9 @@ const stories = prStories.filter((s) => byId.has(s.id));
 const [prologue, ...fixes] = stories;
 const mergedPr = (id: string) => byId.get(id)!;
 const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
+/** The coda sits in one pinned screen, so it lists the newest few open PRs and links the rest. */
+const openShown = [...open].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
+const SPOTLIGHT_REPO = 'FreeCAD/FreeCAD';
 ---
 
 <section class="oss experience-only" id="open-source" aria-labelledby="oss-title">
@@ -119,7 +122,7 @@ const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
         </p>
         <ul class="open-list">
           {
-            open.map((p) => (
+            openShown.map((p) => (
               <li>
                 <a href={p.url} target="_blank" rel="noopener">
                   <span class="num">#{p.number}</span> {p.title}
@@ -128,6 +131,15 @@ const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
             ))
           }
         </ul>
+        {
+          open.length > openShown.length && (
+            <p class="open-more">
+              <a href={`https://github.com/${SPOTLIGHT_REPO}/pulls?q=is%3Apr+is%3Aopen+author%3A${github.user}`} target="_blank" rel="noopener">
+                and {open.length - openShown.length} more in review ↗
+              </a>
+            </p>
+          )
+        }
       </div>
     </div>
   </article>
@@ -319,6 +331,19 @@ const roundDown = (n: number, step: number) => Math.floor(n / step) * step;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px 22px;
     text-align: left;
+  }
+  .open-more {
+    margin: 14px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+  }
+  .open-more a {
+    color: var(--fg-dim);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .open-more a:hover {
+    color: var(--fg);
   }
   .open-list a {
     display: block;
