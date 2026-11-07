@@ -4,10 +4,10 @@
  * selection boxes, executors type the text, a verifier ticks each box, and the bar at the
  * bottom narrates it from Issue #1 to a merged PR.
  *
- * The page is built as it's read: what's on screen first, then each block as it scrolls into
- * view, in its own short pass. Each pass is Web Animations scheduled up front, so finishing
- * early is just `finish()` on each one. The text is in the page from the first byte; blocks are
- * only clipped until their turn.
+ * The résumé is built once, on arrival; a case study keeps building as it's read, each block
+ * typing itself in as it scrolls into view. Each pass is Web Animations scheduled up front, so
+ * finishing early is just `finish()` on each one. The text is in the page from the first byte;
+ * blocks are only clipped until their turn.
  */
 
 const PULLWRIGHT = 'https://github.com/Ayushjo/MyOwnDevin';
@@ -23,6 +23,11 @@ export interface BuildSpec {
   typed: string;
   quiet: string;
   boxes: string;
+  /**
+   * Keep building as the reader scrolls: blocks below the fold wait, hidden, and type themselves
+   * in when they arrive. Without it only the first screen is built, and any input skips that.
+   */
+  scroll?: boolean;
 }
 
 export const RESUME_BUILD: BuildSpec = {
@@ -78,6 +83,7 @@ export const WORK_BUILD = (seenKey: string, issue: number, title: string): Build
   typed: ['h1', '.tagline', '.lede', '.stat-value', '.case h2', '.problem p', '.flow h3', '.decision h3', '.num-value'].join(','),
   quiet: ['.crumbs', '.idx', '.stat-label', '.actions', '.flow p', '.step', '.prose', '.decision p', '.num-label', '.num-note', '.chips'].join(','),
   boxes: '.hero, .shot, .flow li, .decision, .num',
+  scroll: true,
 });
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -169,9 +175,9 @@ interface Unit {
 }
 
 /**
- * Build the page as it's read: what's on screen is built at once, and every block below waits,
- * hidden, until it scrolls into view, then gets its own short pass (a "commit") from the agents.
- * Scrolling never skips; Esc or the Skip button reveals everything that's left.
+ * Build what's on screen with the full cast of agents. With `spec.scroll`, every block below
+ * then waits, hidden, until it scrolls into view and types itself in (a "commit"); scrolling
+ * never skips, Esc or the Skip button reveals the rest. Without it, any input skips to the end.
  */
 export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   current?.finish();
@@ -190,8 +196,8 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     return r.width > 0 && r.height > 0;
   };
   const allBoxes = [...root.querySelectorAll<HTMLElement>(spec.boxes)].filter(shown);
-  const typedAll = [...root.querySelectorAll<HTMLElement>(spec.typed)].filter(shown);
-  const quietAll = [...root.querySelectorAll<HTMLElement>(spec.quiet)].filter(shown);
+  const typedFound = [...root.querySelectorAll<HTMLElement>(spec.typed)].filter(shown);
+  const quietFound = [...root.querySelectorAll<HTMLElement>(spec.quiet)].filter(shown);
   const units: Unit[] = [];
   const unitOf = new Map<HTMLElement, Unit>();
   for (const b of allBoxes) {
@@ -209,9 +215,17 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     if (box) unitOf.get(box)![kind].push(el);
     else units.push({ anchor: el, boxes: [], typed: kind === 'typed' ? [el] : [], quiet: kind === 'quiet' ? [el] : [], state: 'pending' });
   };
-  for (const el of typedAll) place(el, 'typed');
-  for (const el of quietAll) place(el, 'quiet');
+  for (const el of typedFound) place(el, 'typed');
+  for (const el of quietFound) place(el, 'quiet');
   units.sort((a, b) => (a.anchor.compareDocumentPosition(b.anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+  const onScreen = units.filter((u) => {
+    const r = u.anchor.getBoundingClientRect();
+    return r.top < innerHeight * 1.05 && r.bottom > 0;
+  });
+  // A one-shot build only ever touches the first screen.
+  if (!spec.scroll) units.splice(0, units.length, ...onScreen);
+  const typedAll = units.flatMap((u) => u.typed);
+  const quietAll = units.flatMap((u) => u.quiet);
 
   // ---- 2. Hide everything that will be built (visually only), and lay down the overlay. ----
   for (const el of typedAll) el.setAttribute('data-b', '');
@@ -232,6 +246,7 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   document.body.append(ruler);
 
   const total = typedAll.length;
+  const t0 = performance.now();
   const builtSet = new Set<HTMLElement>();
   let commits = 0;
   let ended = false;
@@ -248,7 +263,85 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     lastY = y;
   };
 
-  // ---- 3. One pass of the agents over a group of units. `speed` < 1 is quicker. ----
+  /** How every pass ends: drop its animations, leave its blocks built, merge if it was the last. */
+  const settle = (group: Unit[], pane: HTMLElement, anims: Animation[], skip: () => void) => {
+    for (const a of anims) a.cancel();
+    for (const u of group) {
+      for (const el of u.typed) {
+        el.removeAttribute('data-b');
+        builtSet.add(el);
+      }
+      for (const el of u.quiet) el.removeAttribute('data-bq');
+      u.state = 'done';
+    }
+    pane.remove();
+    running.delete(skip);
+    progress();
+    if (running.size || ended) return;
+    ruler.classList.remove('is-on');
+    if (units.some((u) => u.state === 'pending')) waiting();
+    else complete();
+  };
+
+  // ---- 3a. A later pass, as the reader scrolls: the text types itself in, quickly, no agents. ----
+  const runLight = (group: Unit[]) => {
+    for (const u of group) u.state = 'building';
+    commits += 1;
+    const pane = document.createElement('div');
+    pane.className = 'build-batch';
+    layer.append(pane);
+    const anims: Animation[] = [];
+    const play = (el: Element, keys: Keyframe[], delay: number, duration: number, easing = EASE) => {
+      const a = el.animate(keys, { delay, duration, easing, fill: 'both' });
+      anims.push(a);
+      return a;
+    };
+    let END = 0;
+    let i = 0;
+    for (const u of group) {
+      const unitStart = 40 + i * 70;
+      for (const el of u.typed) {
+        const r = docRect(el);
+        const start = 40 + i * 70;
+        const chars = (el.textContent ?? '').trim().length;
+        const dur = Math.min(280, Math.max(90, 30 + chars * 1.4));
+        const sel = document.createElement('div');
+        sel.className = 'build-sel';
+        sel.style.cssText = `left:${r.x - 3}px;top:${r.y - 1}px;width:${r.w + 6}px;height:${r.h + 2}px`;
+        pane.append(sel);
+        play(sel, [{ transform: 'scaleX(0)', opacity: 1 }, { transform: 'scaleX(1)', opacity: 1, offset: 0.7 }, { transform: 'scaleX(1)', opacity: 0 }], start, dur + 300, 'linear');
+        play(el, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }], start, dur, 'linear')
+          .finished.then(() => {
+            if (ended) return;
+            builtSet.add(el);
+            progress();
+            msg.innerHTML = `<em>exec ·</em> ${builtSet.size} / ${total} blocks`;
+          })
+          .catch(() => {});
+        if (el.matches('.stat-value, .num-value')) play(el, [{ transform: 'translateY(4px)' }, { transform: 'none' }], start, dur + 160);
+        END = Math.max(END, start + dur + 300);
+        i += 1;
+      }
+      for (const el of u.quiet) play(el, [{ opacity: 0 }, { opacity: 1 }], unitStart + 60, 320);
+      END = Math.max(END, unitStart + 380);
+    }
+    let over = false;
+    const end = () => {
+      if (over) return;
+      over = true;
+      settle(group, pane, anims, skip);
+    };
+    const skip = () => {
+      for (const a of anims) a.finish();
+      end();
+    };
+    running.add(skip);
+    const marker = pane.animate([{ opacity: 1 }, { opacity: 1 }], { delay: END, duration: 1 });
+    anims.push(marker);
+    marker.finished.then(end).catch(() => {});
+  };
+
+  // ---- 3b. A full pass of the agents over a group of units. `speed` < 1 is quicker. ----
   const runBatch = (group: Unit[], speed: number) => {
     for (const u of group) u.state = 'building';
     commits += 1;
@@ -391,27 +484,15 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
 
     // Narration.
     if (boxes.length) {
-      msg.innerHTML = `<em>commit ${commits} ·</em> planning ${boxes.length} block${boxes.length > 1 ? 's' : ''}`;
-      at(VERIFY_START, () => (msg.innerHTML = `<em>verifier ·</em> checking ${boxes.length} block${boxes.length > 1 ? 's' : ''}`));
+      const n = `${boxes.length} block${boxes.length > 1 ? 's' : ''}`;
+      msg.innerHTML = spec.scroll ? `<em>commit ${commits} ·</em> planning ${n}` : `<em>planner ·</em> laying out ${n}`;
+      at(VERIFY_START, () => (msg.innerHTML = `<em>verifier ·</em> checking ${n}`));
     }
 
     const end = () => {
       if (over) return;
       over = true;
-      for (const a of anims) a.cancel();
-      for (const el of typed) {
-        el.removeAttribute('data-b');
-        builtSet.add(el);
-      }
-      for (const el of quiet) el.removeAttribute('data-bq');
-      pane.remove();
-      for (const u of group) u.state = 'done';
-      running.delete(skipBatch);
-      progress();
-      if (running.size || ended) return;
-      ruler.classList.remove('is-on');
-      if (units.some((u) => u.state === 'pending')) waiting();
-      else complete();
+      settle(group, pane, anims, skipBatch);
     };
     const skipBatch = () => {
       for (const a of anims) a.finish();
@@ -428,7 +509,7 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     flushTimer = 0;
     const group = units.filter((u) => queue.has(u) && u.state === 'pending');
     queue.clear();
-    if (group.length && !ended) runBatch(group, 0.75);
+    if (group.length && !ended) runLight(group);
   };
   const byAnchor = new Map(units.map((u) => [u.anchor as Element, u]));
   const io = new IntersectionObserver(
@@ -444,11 +525,6 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     },
     { rootMargin: '0px 0px -8% 0px' },
   );
-  const onScreen = units.filter((u) => {
-    const r = u.anchor.getBoundingClientRect();
-    return r.top < innerHeight * 1.05 && r.bottom > 0;
-  });
-
   // ---- 5. Finishing, skipping and cleanup. ----
   let resolveDone!: () => void;
   const done = new Promise<void>((r) => (resolveDone = r));
@@ -464,11 +540,17 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     ruler.remove();
     removeEventListener('keydown', onKey, true);
     removeEventListener('focusin', onFocus, true);
+    removeEventListener('wheel', onInput, true);
+    removeEventListener('touchstart', onInput, true);
+    removeEventListener('pointerdown', onPointer, true);
     removeEventListener('scroll', onScroll);
     removeEventListener('resize', onResize);
     bar.classList.add('is-done');
     fill.style.setProperty('--p', '1');
-    msg.innerHTML = `<em>PR #${spec.issue} merged ·</em> +${total} −0 · ${commits} commit${commits === 1 ? '' : 's'} · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
+    const how = spec.scroll
+      ? `${commits} commit${commits === 1 ? '' : 's'}`
+      : `${((performance.now() - t0) / 1000).toFixed(1)} s`;
+    msg.innerHTML = `<em>PR #${spec.issue} merged ·</em> +${total} −0 · ${how} · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
     setTimeout(() => current === build && bar.classList.add('is-idle'), 2600);
     resolveDone();
   };
@@ -477,7 +559,11 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     for (const skip of [...running]) skip();
     complete();
   };
-  const onKey = (e: KeyboardEvent) => e.key === 'Escape' && finishAll();
+  // Scroll-built pages skip on Esc only (scrolling is what drives them); a one-shot build gets out
+  // of the way on any input.
+  const onKey = (e: KeyboardEvent) => (spec.scroll ? e.key === 'Escape' : e.key !== 'Tab') && finishAll();
+  const onInput = () => finishAll();
+  const onPointer = (e: PointerEvent) => !(e.target instanceof Node && bar.contains(e.target)) && finishAll();
   // Tabbing into a block that isn't built yet reveals the page rather than focusing something invisible.
   const onFocus = (e: FocusEvent) => (e.target as Element).closest?.('[data-b], [data-bq]') && finishAll();
   // Phones resize as their address bar slides away; only a real width change moves the layout.
@@ -485,6 +571,11 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   const onResize = () => Math.abs(innerWidth - w0) > 1 && finishAll();
   addEventListener('keydown', onKey, true);
   addEventListener('focusin', onFocus, true);
+  if (!spec.scroll) {
+    addEventListener('wheel', onInput, { capture: true, passive: true });
+    addEventListener('touchstart', onInput, { capture: true, passive: true });
+    addEventListener('pointerdown', onPointer, true);
+  }
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onResize);
 
