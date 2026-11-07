@@ -12,8 +12,11 @@ const merged = github.prs.merged;
 const freecadMerged = merged.filter((p) => p.repo === 'FreeCAD/FreeCAD').length;
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-/** A role's small mark: the first image of its particle shape, if it has one. */
-const logoOf = (r: Role) => (r.shape.startsWith('image:') ? r.shape.slice(6).split('|')[0] : undefined);
+/** A role's small ink mark (public/logos/mark/, 96 px tall), from its particle-shape logo. */
+const logoOf = (r: Role) => {
+  const file = r.shape.startsWith('image:') ? r.shape.slice(6).split('|')[0] : undefined;
+  return file?.replace('/logos/', '/logos/mark/');
+};
 
 export interface ResumeRole extends Role {
   logo?: string;

@@ -124,6 +124,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
               <li class="role-item">
                 <div class="role-head">
                   <h3>
+                    {r.logo && <img class="logo" src={r.logo} alt="" width="96" height="96" loading="lazy" decoding="async" />}
                     {r.company} <span class="title">· {r.title}</span>
                   </h3>
                   <span class="when">{r.period}</span>
@@ -224,7 +225,10 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
         {
           education.map((r) => (
             <div class="edu">
-              <h3>{r.company}</h3>
+              <h3>
+                {r.logo && <img class="logo" src={r.logo} alt="" width="96" height="96" loading="lazy" decoding="async" />}
+                {r.company}
+              </h3>
               <p>{r.title}</p>
               <p class="when">{r.period}</p>
               {r.product && <p class="note">{r.product}</p>}
@@ -607,6 +611,23 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     font-weight: 400;
     font-size: 1.75rem;
     line-height: 1.1;
+  }
+  /* Company marks: white-on-black mattes, inverted and multiplied into ink on the paper. */
+  .logo {
+    display: inline-block;
+    width: auto;
+    height: 1.15em;
+    max-width: 4.2em;
+    margin: 0 0.32em 0 0;
+    vertical-align: -0.16em;
+    object-fit: contain;
+    filter: invert(1) contrast(1.15);
+    mix-blend-mode: multiply;
+  }
+  .edu .logo {
+    height: 1.5em;
+    vertical-align: -0.4em;
+    margin-right: 0.45em;
   }
   .role-head .title {
     font-family: var(--font-display);
