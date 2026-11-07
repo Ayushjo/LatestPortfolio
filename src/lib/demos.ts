@@ -15,3 +15,8 @@ export function demoFor(p: Project): Project['demo'] {
   const captions = existsSync(join(DIR, `${p.slug}.json`)) ? `/demos/${p.slug}.json` : undefined;
   return { src: `/demos/${p.slug}.mp4`, poster, captions };
 }
+
+/** A light still for cards (public/demos/thumb/<slug>.jpg, 800 px), if the project has one. */
+export function thumbFor(p: Project): string | undefined {
+  return existsSync(join(DIR, 'thumb', `${p.slug}.jpg`)) ? `/demos/thumb/${p.slug}.jpg` : undefined;
+}
