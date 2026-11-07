@@ -114,7 +114,11 @@ function ensureHud(root: HTMLElement): HTMLElement {
     <span class="msg"></span>
     <span class="bar" aria-hidden="true"><i></i></span>
     <button type="button" class="skip">Skip</button>
-    <button type="button" class="rebuild" title="Watch Pullwright's agents build this page (R)">↻ Rebuild</button>`;
+    <button type="button" class="rebuild" aria-label="Rebuild this page with Pullwright's agents (R)">
+      <span class="chip" aria-hidden="true">${CURSOR_SVG}</span>
+      <span class="label">Rebuild<span class="with">&nbsp;with Pullwright</span></span>
+      <kbd aria-hidden="true">R</kbd>
+    </button>`;
   document.body.append(hud);
   hud.querySelector('.skip')!.addEventListener('click', () => current?.finish());
   hud.querySelector('.rebuild')!.addEventListener('click', () => {

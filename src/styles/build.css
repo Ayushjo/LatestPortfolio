@@ -254,19 +254,113 @@
 .build-hud.is-done .skip {
   display: none;
 }
-/* Done: the bar shrinks to a quiet pill in the corner. */
+/* While a build runs, Skip is the useful button; Rebuild waits until it's done. */
+.build-hud:not(.is-done):not(.is-idle) .rebuild {
+  display: none;
+}
+
+/* Rebuild: an ink chip holding an agent cursor, the word, and its key. Hover opens it up. */
+.build-hud .rebuild {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px 3px 3px;
+}
+.rebuild .chip {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fg);
+}
+.rebuild .chip svg {
+  width: 9px;
+  height: 11px;
+  margin: 1px 0 0 1px;
+  fill: var(--bg);
+  stroke: none;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rebuild .label {
+  display: inline-flex;
+  white-space: nowrap;
+}
+.rebuild .with {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  vertical-align: bottom;
+  transition:
+    max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+.rebuild kbd {
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 9.5px;
+  color: var(--fg-dim);
+}
+.build-hud .rebuild:hover .with,
+.build-hud .rebuild:focus-visible .with {
+  max-width: 11em;
+  opacity: 1;
+}
+/* The agent nudges forward, as if it's about to start. */
+.build-hud .rebuild:hover .chip svg,
+.build-hud .rebuild:focus-visible .chip svg {
+  transform: translate(1.5px, -1.5px) rotate(-8deg);
+}
+
+/* Done: the bar shrinks to the Rebuild pill in the corner. */
 .build-hud.is-idle {
   left: calc(100% - 18px);
   gap: 0;
-  padding: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   transform: translateX(-100%);
 }
 .build-hud.is-idle > :not(.rebuild) {
   display: none;
 }
 .build-hud.is-idle .rebuild {
-  border-color: transparent;
-  background: none;
+  padding: 4px 8px 4px 4px;
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.build-hud.is-idle .rebuild:hover {
+  border-color: color-mix(in srgb, var(--fg) 40%, transparent);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.45);
+}
+/* No keyboard on touch screens. */
+@media (hover: none) {
+  .rebuild kbd {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rebuild .with,
+  .rebuild .chip svg {
+    transition: none;
+  }
 }
 
 @media (max-width: 640px) {
