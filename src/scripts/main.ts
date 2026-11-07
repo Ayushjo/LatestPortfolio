@@ -140,7 +140,6 @@ async function apply(mode: Mode) {
             /* fine */
           }
           void apply(getMode());
-wireBuild();
         },
       },
     });
@@ -187,3 +186,5 @@ onModeChange((mode, prev) => {
   void apply(mode);
 });
 void apply(getMode());
+// A first visit straight into Recruiter mode builds the résumé too, not only a switch to it.
+wireBuild();

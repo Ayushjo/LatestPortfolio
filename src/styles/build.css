@@ -155,6 +155,16 @@
     repeating-linear-gradient(90deg, color-mix(in srgb, var(--fg) 16%, transparent) 0 1px, transparent 1px 10px) 0 10px /
       100% 6px no-repeat;
   background-color: color-mix(in srgb, var(--bg) 88%, transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.build-ruler.is-on {
+  opacity: 1;
+}
+/* Each pass of the agents draws into its own pane, removed when the pass is merged. */
+.build-batch {
+  position: absolute;
+  inset: 0;
 }
 .build-ruler span {
   position: absolute;
@@ -217,6 +227,14 @@
 .build-hud .msg em {
   font-style: normal;
   color: var(--fg-dim);
+}
+.build-hud .msg .hint {
+  color: var(--fg-faint);
+}
+@media (max-width: 480px) {
+  .build-hud .msg .hint {
+    display: none;
+  }
 }
 .build-hud .bar {
   flex: none;

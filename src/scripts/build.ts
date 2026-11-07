@@ -4,9 +4,10 @@
  * selection boxes, executors type the text, a verifier ticks each box, and the bar at the
  * bottom narrates it from Issue #1 to a merged PR.
  *
- * Everything is a Web Animation scheduled up front, so finishing early is just
- * `finish()` on each one. The résumé's text is in the page from the first byte; blocks are
- * only clipped until their turn, and anything below the fold is never touched.
+ * The page is built as it's read: what's on screen first, then each block as it scrolls into
+ * view, in its own short pass. Each pass is Web Animations scheduled up front, so finishing
+ * early is just `finish()` on each one. The text is in the page from the first byte; blocks are
+ * only clipped until their turn.
  */
 
 const PULLWRIGHT = 'https://github.com/Ayushjo/MyOwnDevin';
@@ -158,6 +159,20 @@ function ensureHud(root: HTMLElement, spec: BuildSpec): HTMLElement {
   return hud;
 }
 
+/** A box with everything typed or faded inside it, or one loose line: what scrolls in together. */
+interface Unit {
+  anchor: HTMLElement;
+  boxes: HTMLElement[];
+  typed: HTMLElement[];
+  quiet: HTMLElement[];
+  state: 'pending' | 'building' | 'done';
+}
+
+/**
+ * Build the page as it's read: what's on screen is built at once, and every block below waits,
+ * hidden, until it scrolls into view, then gets its own short pass (a "commit") from the agents.
+ * Scrolling never skips; Esc or the Skip button reveals everything that's left.
+ */
 export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   current?.finish();
   const bar = ensureHud(root, spec);
@@ -169,21 +184,38 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
     /* fine */
   }
 
-  // ---- 1. Measure what's on screen (plus a little below the fold). ----
-  const top = scrollY;
-  const limit = scrollY + innerHeight * 1.1;
-  const inView = (el: Element) => {
+  // ---- 1. Group the page into units: each outermost box with its contents, plus loose lines. ----
+  const shown = (el: Element) => {
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && r.top + scrollY < limit && r.bottom + scrollY > top;
+    return r.width > 0 && r.height > 0;
   };
-  const boxes = [...root.querySelectorAll<HTMLElement>(spec.boxes)].filter(inView);
-  const typed = [...root.querySelectorAll<HTMLElement>(spec.typed)].filter(inView);
-  const quiet = [...root.querySelectorAll<HTMLElement>(spec.quiet)].filter(inView);
-  const boxOf = (el: Element) => boxes.findIndex((b) => b.contains(el));
+  const allBoxes = [...root.querySelectorAll<HTMLElement>(spec.boxes)].filter(shown);
+  const typedAll = [...root.querySelectorAll<HTMLElement>(spec.typed)].filter(shown);
+  const quietAll = [...root.querySelectorAll<HTMLElement>(spec.quiet)].filter(shown);
+  const units: Unit[] = [];
+  const unitOf = new Map<HTMLElement, Unit>();
+  for (const b of allBoxes) {
+    // Boxes come in document order, so an enclosing box is always seen first.
+    const outer = allBoxes.find((o) => unitOf.has(o) && o.contains(b));
+    if (outer) unitOf.get(outer)!.boxes.push(b);
+    else {
+      const u: Unit = { anchor: b, boxes: [b], typed: [], quiet: [], state: 'pending' };
+      units.push(u);
+      unitOf.set(b, u);
+    }
+  }
+  const place = (el: HTMLElement, kind: 'typed' | 'quiet') => {
+    const box = allBoxes.find((b) => unitOf.has(b) && b.contains(el));
+    if (box) unitOf.get(box)![kind].push(el);
+    else units.push({ anchor: el, boxes: [], typed: kind === 'typed' ? [el] : [], quiet: kind === 'quiet' ? [el] : [], state: 'pending' });
+  };
+  for (const el of typedAll) place(el, 'typed');
+  for (const el of quietAll) place(el, 'quiet');
+  units.sort((a, b) => (a.anchor.compareDocumentPosition(b.anchor) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
 
-  // ---- 2. Hide what will be built (visually only), and lay down the overlay. ----
-  for (const el of typed) el.setAttribute('data-b', '');
-  for (const el of quiet) el.setAttribute('data-bq', '');
+  // ---- 2. Hide everything that will be built (visually only), and lay down the overlay. ----
+  for (const el of typedAll) el.setAttribute('data-b', '');
+  for (const el of quietAll) el.setAttribute('data-bq', '');
   root.setAttribute('data-building', '');
   delete document.documentElement.dataset.prebuild;
 
@@ -199,206 +231,276 @@ export function buildPage(root: HTMLElement, spec: BuildSpec): Build {
   for (let x = 0; x < innerWidth; x += 100) ruler.insertAdjacentHTML('beforeend', `<span style="left:${x}px">${x}</span>`);
   document.body.append(ruler);
 
-  const agent = (name: string): Agent => {
-    const el = document.createElement('div');
-    el.className = 'build-cursor';
-    el.innerHTML = `${CURSOR_SVG}<b>${name}</b>`;
-    layer.append(el);
-    return { el, path: [], free: 0 };
-  };
-  const enter = { x: innerWidth * 0.5, y: scrollY + innerHeight + 40 };
-  const planner = agent('planner');
-  const executors = [agent('exec-1'), agent('exec-2'), agent('exec-3'), agent('exec-4')];
-  const verifier = agent('verifier');
-
-  const anims: Animation[] = [];
+  const total = typedAll.length;
+  const builtSet = new Set<HTMLElement>();
+  let commits = 0;
   let ended = false;
-  const play = (el: Element, keys: Keyframe[], delay: number, duration: number, easing = EASE) => {
-    const a = el.animate(keys, { delay, duration, easing, fill: 'both' });
-    anims.push(a);
-    return a;
+  const running = new Set<() => void>();
+  const progress = () => fill.style.setProperty('--p', String(builtSet.size / Math.max(1, total)));
+  const waiting = () =>
+    (msg.innerHTML = `<em>exec ·</em> ${builtSet.size} / ${total} blocks<span class="hint"> · scroll to keep building</span>`);
+
+  let lastY = scrollY;
+  let goingUp = false;
+  const onScroll = () => {
+    const y = scrollY;
+    if (Math.abs(y - lastY) > 2) goingUp = y < lastY;
+    lastY = y;
   };
-  /** Run `fn` at `ms` into the build (or at once if it's finished early), unless it already ended. */
-  const at = (ms: number, fn: () => void) => {
-    const marker = layer.animate([{ opacity: 1 }, { opacity: 1 }], { delay: ms, duration: 1 });
-    anims.push(marker);
-    marker.finished.then(() => !ended && fn()).catch(() => {});
+
+  // ---- 3. One pass of the agents over a group of units. `speed` < 1 is quicker. ----
+  const runBatch = (group: Unit[], speed: number) => {
+    for (const u of group) u.state = 'building';
+    commits += 1;
+    ruler.classList.add('is-on');
+    const boxes = group.flatMap((u) => u.boxes);
+    const typed = group.flatMap((u) => u.typed);
+    const quiet = group.flatMap((u) => u.quiet);
+    const boxOf = (el: Element) => boxes.findIndex((b) => b.contains(el));
+    const k = (ms: number) => ms * speed;
+
+    const pane = document.createElement('div');
+    pane.className = 'build-batch';
+    layer.append(pane);
+    const anims: Animation[] = [];
+    let over = false;
+    const play = (el: Element, keys: Keyframe[], delay: number, duration: number, easing = EASE) => {
+      const a = el.animate(keys, { delay, duration, easing, fill: 'both' });
+      anims.push(a);
+      return a;
+    };
+    const at = (ms: number, fn: () => void) => {
+      const marker = pane.animate([{ opacity: 1 }, { opacity: 1 }], { delay: ms, duration: 1 });
+      anims.push(marker);
+      marker.finished.then(() => !over && fn()).catch(() => {});
+    };
+    const agent = (name: string): Agent => {
+      const el = document.createElement('div');
+      el.className = 'build-cursor';
+      el.innerHTML = `${CURSOR_SVG}<b>${name}</b>`;
+      pane.append(el);
+      return { el, path: [], free: 0 };
+    };
+    // Agents walk in from the edge the reader is scrolling towards.
+    const enter = { x: innerWidth * 0.5, y: goingUp ? scrollY - 40 : scrollY + innerHeight + 40 };
+    const planner = boxes.length ? agent('planner') : null;
+    const executors = Array.from({ length: Math.min(4, Math.ceil(typed.length / 2)) }, (_, i) =>
+      agent(`exec-${i + 1}`),
+    );
+    const verifier = boxes.length ? agent('verifier') : null;
+
+    // Plan: the planner drags a box over each block.
+    const PLAN_START = k(260);
+    const boxAt: number[] = [];
+    const boxEls: HTMLElement[] = [];
+    planner?.path.push({ t: 0, ...enter });
+    boxes.forEach((b, i) => {
+      const r = docRect(b);
+      const t = PLAN_START + i * k(150);
+      boxAt.push(t);
+      const box = document.createElement('div');
+      box.className = 'build-box';
+      box.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
+      box.innerHTML = `<i></i><i></i><i></i><i></i><span class="build-size">${Math.round(r.w)} × ${Math.round(r.h)}</span>`;
+      pane.append(box);
+      boxEls.push(box);
+      planner!.path.push({ t: t - k(90), x: r.x, y: r.y }, { t: t + k(130), x: r.x + r.w, y: r.y + r.h });
+      play(box, [{ transform: 'scale(0.02, 0.02)', opacity: 0 }, { transform: 'scale(1, 1)', opacity: 1 }], t, k(220));
+    });
+    const planEnd = boxes.length ? boxAt.at(-1)! + k(260) : k(120);
+    planner?.path.push({ t: planEnd + k(200), x: innerWidth + 40, y: scrollY + 60 });
+
+    // Execute: executors type the blocks, each after its box exists.
+    executors.forEach((e) => e.path.push({ t: 0, ...enter }));
+    const boxLast = new Array<number>(boxes.length).fill(0);
+    typed.forEach((el, i) => {
+      const r = docRect(el);
+      const bi = boxOf(el);
+      const ready = (bi >= 0 ? boxAt[bi]! : PLAN_START) + k(160);
+      const ex = executors[i % executors.length]!;
+      const start = Math.max(ready, ex.free) + k(120);
+      const chars = (el.textContent ?? '').trim().length;
+      const dur = k(Math.min(360, Math.max(120, 60 + chars * 2.4)));
+      const lineY = r.y + Math.min(r.h, 22) * 0.55;
+      ex.path.push({ t: start - k(120), x: r.x - 2, y: lineY }, { t: start + dur, x: r.x + r.w, y: r.y + r.h - Math.min(r.h, 22) * 0.45 });
+      ex.free = start + dur;
+
+      const sel = document.createElement('div');
+      sel.className = 'build-sel';
+      sel.style.cssText = `left:${r.x - 3}px;top:${r.y - 1}px;width:${r.w + 6}px;height:${r.h + 2}px`;
+      pane.append(sel);
+      play(sel, [{ transform: 'scaleX(0)', opacity: 1 }, { transform: 'scaleX(1)', opacity: 1, offset: 0.7 }, { transform: 'scaleX(1)', opacity: 0 }], start, dur + k(420), 'linear');
+      play(el, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }], start, dur, 'linear')
+        .finished.then(() => {
+          if (ended) return;
+          builtSet.add(el);
+          progress();
+          msg.innerHTML = `<em>exec ·</em> ${builtSet.size} / ${total} blocks`;
+        })
+        .catch(() => {});
+      // Numbers land with a small lift, so a skim catches them.
+      if (el.matches('.glance .value, .stat-value, .num-value'))
+        play(el, [{ transform: 'translateY(4px)' }, { transform: 'none' }], start, dur + k(200), EASE);
+      if (bi >= 0) boxLast[bi] = Math.max(boxLast[bi]!, start + dur);
+    });
+    const execEnd = Math.max(planEnd, ...executors.map((e) => e.free));
+    executors.forEach((e, i) => e.path.push({ t: e.free + k(260), x: i % 2 ? -40 : innerWidth + 40, y: e.path.at(-1)!.y + 30 }));
+
+    // Small print fades in with its box; the box's stripes clear once its last line is written.
+    quiet.forEach((el) => {
+      const bi = boxOf(el);
+      const when = bi >= 0 ? Math.max(boxAt[bi]! + k(260), (boxLast[bi] || boxAt[bi]!) - k(120)) : Math.max(planEnd, k(200));
+      play(el, [{ opacity: 0 }, { opacity: 1 }], when, k(380));
+    });
+    boxEls.forEach((box, i) => at(Math.max(boxLast[i]!, boxAt[i]! + k(300)), () => box.style.setProperty('--hatch', '0')));
+
+    // Verify: a tick on each box, then the pass fades.
+    const VERIFY_START = execEnd + k(160);
+    verifier?.path.push({ t: 0, ...enter }, { t: VERIFY_START - k(160), ...enter });
+    boxes.forEach((b, i) => {
+      const r = docRect(b);
+      const t = VERIFY_START + i * k(110);
+      const check = document.createElement('div');
+      check.className = 'build-check';
+      check.innerHTML = CHECK_SVG;
+      check.style.cssText = `left:${r.x + r.w - 10}px;top:${r.y - 10}px`;
+      pane.append(check);
+      verifier!.path.push({ t: t - k(60), x: r.x + r.w - 2, y: r.y + 2 });
+      play(check, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.4 }, { transform: 'scale(1)', opacity: 1 }], t, k(260));
+    });
+    const verifyEnd = VERIFY_START + boxes.length * k(110) + k(200);
+    verifier?.path.push({ t: verifyEnd + k(220), x: innerWidth + 40, y: scrollY + innerHeight * 0.4 });
+    const END = verifyEnd + k(520);
+    play(pane, [{ opacity: 1 }, { opacity: 0 }], verifyEnd + k(120), k(400));
+
+    // Cursor flights: one keyframed animation per agent across the pass.
+    for (const a of [planner, ...executors, verifier]) {
+      if (!a) continue;
+      const path = a.path.sort((p, q) => p.t - q.t);
+      const keys = path.map((p) => ({
+        offset: Math.min(1, Math.max(0, p.t / END)),
+        transform: `translate(${p.x}px, ${p.y}px)`,
+        easing: EASE,
+      }));
+      if (keys[0]!.offset > 0) keys.unshift({ ...keys[0]!, offset: 0 });
+      if (keys.at(-1)!.offset < 1) keys.push({ ...keys.at(-1)!, offset: 1 });
+      play(a.el, keys, 0, END, 'linear');
+      const first = path[1]?.t ?? 0;
+      play(a.el, [{ opacity: 0 }, { opacity: 1, offset: Math.min(0.99, (first + 1) / END) }, { opacity: 1 }], 0, END, 'linear');
+    }
+
+    // Narration.
+    if (boxes.length) {
+      msg.innerHTML = `<em>commit ${commits} ·</em> planning ${boxes.length} block${boxes.length > 1 ? 's' : ''}`;
+      at(VERIFY_START, () => (msg.innerHTML = `<em>verifier ·</em> checking ${boxes.length} block${boxes.length > 1 ? 's' : ''}`));
+    }
+
+    const end = () => {
+      if (over) return;
+      over = true;
+      for (const a of anims) a.cancel();
+      for (const el of typed) {
+        el.removeAttribute('data-b');
+        builtSet.add(el);
+      }
+      for (const el of quiet) el.removeAttribute('data-bq');
+      pane.remove();
+      for (const u of group) u.state = 'done';
+      running.delete(skipBatch);
+      progress();
+      if (running.size || ended) return;
+      ruler.classList.remove('is-on');
+      if (units.some((u) => u.state === 'pending')) waiting();
+      else complete();
+    };
+    const skipBatch = () => {
+      for (const a of anims) a.finish();
+      end();
+    };
+    running.add(skipBatch);
+    at(END, end);
   };
 
-  // ---- 3. Plan: the planner drags a box over each block. ----
-  const PLAN_START = 260;
-  const boxAt: number[] = [];
-  const boxEls: HTMLElement[] = [];
-  planner.path.push({ t: 0, ...enter });
-  boxes.forEach((b, i) => {
-    const r = docRect(b);
-    const t = PLAN_START + i * 150;
-    boxAt.push(t);
-    const box = document.createElement('div');
-    box.className = 'build-box';
-    box.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`;
-    box.innerHTML = `<i></i><i></i><i></i><i></i><span class="build-size">${Math.round(r.w)} × ${Math.round(r.h)}</span>`;
-    layer.append(box);
-    boxEls.push(box);
-    planner.path.push({ t: t - 90, x: r.x, y: r.y }, { t: t + 130, x: r.x + r.w, y: r.y + r.h });
-    play(box, [{ transform: 'scale(0.02, 0.02)', opacity: 0 }, { transform: 'scale(1, 1)', opacity: 1 }], t, 220);
-  });
-  const planEnd = (boxAt.at(-1) ?? PLAN_START) + 260;
-  planner.path.push({ t: planEnd + 200, x: innerWidth + 40, y: scrollY + 60 });
-
-  // ---- 4. Execute: four executors type the blocks, each after its box exists. ----
-  executors.forEach((e) => e.path.push({ t: 0, ...enter }));
-  let built = 0;
-  const total = typed.length;
-  const boxLast = new Array<number>(boxes.length).fill(0);
-  typed.forEach((el, i) => {
-    const r = docRect(el);
-    const bi = boxOf(el);
-    const ready = (bi >= 0 ? boxAt[bi]! : PLAN_START) + 160;
-    const ex = executors[i % executors.length]!;
-    const start = Math.max(ready, ex.free) + 120;
-    const chars = (el.textContent ?? '').trim().length;
-    const dur = Math.min(360, Math.max(120, 60 + chars * 2.4));
-    const lineY = r.y + Math.min(r.h, 22) * 0.55;
-    ex.path.push({ t: start - 120, x: r.x - 2, y: lineY }, { t: start + dur, x: r.x + r.w, y: r.y + r.h - Math.min(r.h, 22) * 0.45 });
-    ex.free = start + dur;
-
-    const sel = document.createElement('div');
-    sel.className = 'build-sel';
-    sel.style.cssText = `left:${r.x - 3}px;top:${r.y - 1}px;width:${r.w + 6}px;height:${r.h + 2}px`;
-    layer.append(sel);
-    play(sel, [{ transform: 'scaleX(0)', opacity: 1 }, { transform: 'scaleX(1)', opacity: 1, offset: 0.7 }, { transform: 'scaleX(1)', opacity: 0 }], start, dur + 420, 'linear');
-    const reveal = play(el, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }], start, dur, 'linear');
-    reveal.finished
-      .then(() => {
-        built += 1;
-        fill.style.setProperty('--p', String(built / Math.max(1, total)));
-        if (phase === 'executing') msg.innerHTML = `<em>exec ·</em> ${built} / ${total} blocks`;
-      })
-      .catch(() => {});
-    // Numbers land with a small lift, so a skim catches them.
-    if (el.matches('.glance .value'))
-      play(el, [{ transform: 'translateY(4px)' }, { transform: 'none' }], start, dur + 200, EASE);
-    if (bi >= 0) boxLast[bi] = Math.max(boxLast[bi]!, start + dur);
-  });
-  const execEnd = Math.max(planEnd, ...executors.map((e) => e.free));
-  executors.forEach((e, i) => e.path.push({ t: e.free + 260, x: i % 2 ? -40 : innerWidth + 40, y: e.path.at(-1)!.y + 30 }));
-
-  // Small print fades in with its box; the box's stripes clear once its last line is written.
-  quiet.forEach((el) => {
-    const bi = boxOf(el);
-    const when = bi >= 0 ? Math.max(boxAt[bi]! + 260, (boxLast[bi] || boxAt[bi]!) - 120) : planEnd;
-    play(el, [{ opacity: 0 }, { opacity: 1 }], when, 380);
-  });
-  boxEls.forEach((box, i) => at(Math.max(boxLast[i]!, boxAt[i]! + 300), () => box.style.setProperty('--hatch', '0')));
-
-  // ---- 5. Verify: a tick on each box, then the boxes and ruler fade. ----
-  const VERIFY_START = execEnd + 160;
-  verifier.path.push({ t: 0, ...enter }, { t: VERIFY_START - 160, ...enter });
-  boxes.forEach((b, i) => {
-    const r = docRect(b);
-    const t = VERIFY_START + i * 110;
-    const check = document.createElement('div');
-    check.className = 'build-check';
-    check.innerHTML = CHECK_SVG;
-    check.style.cssText = `left:${r.x + r.w - 10}px;top:${r.y - 10}px`;
-    layer.append(check);
-    verifier.path.push({ t: t - 60, x: r.x + r.w - 2, y: r.y + 2 });
-    play(check, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.4 }, { transform: 'scale(1)', opacity: 1 }], t, 260);
-  });
-  const verifyEnd = VERIFY_START + boxes.length * 110 + 200;
-  verifier.path.push({ t: verifyEnd + 220, x: innerWidth + 40, y: scrollY + innerHeight * 0.4 });
-  const END = verifyEnd + 520;
-  play(layer, [{ opacity: 1 }, { opacity: 0 }], verifyEnd + 120, 400);
-  play(ruler, [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], 0, END);
-
-  // ---- 6. Cursor flights: one keyframed animation per agent across the whole run. ----
-  for (const a of [planner, ...executors, verifier]) {
-    const path = a.path.sort((p, q) => p.t - q.t);
-    const keys = path.map((p) => ({
-      offset: Math.min(1, Math.max(0, p.t / END)),
-      transform: `translate(${p.x}px, ${p.y}px)`,
-      easing: EASE,
-    }));
-    if (keys[0]!.offset > 0) keys.unshift({ ...keys[0]!, offset: 0 });
-    if (keys.at(-1)!.offset < 1) keys.push({ ...keys.at(-1)!, offset: 1 });
-    play(a.el, keys, 0, END, 'linear');
-    const first = path[1]?.t ?? 0;
-    play(a.el, [{ opacity: 0 }, { opacity: 1, offset: Math.min(0.99, (first + 1) / END) }, { opacity: 1 }], 0, END, 'linear');
-  }
-
-  // ---- 7. Narration. ----
-  let phase: 'issue' | 'planning' | 'executing' | 'verifying' | 'merged' = 'issue';
-  const t0 = performance.now();
-  bar.classList.remove('is-idle', 'is-done');
-  fill.style.setProperty('--p', '0');
-  msg.innerHTML = `<em>issue #${spec.issue} ·</em> ${spec.title}`;
-  at(PLAN_START - 60, () => {
-    phase = 'planning';
-    msg.innerHTML = `<em>planner ·</em> laying out ${boxes.length} blocks`;
-  });
-  at(planEnd, () => {
-    phase = 'executing';
-    msg.innerHTML = `<em>exec ·</em> ${built} / ${total} blocks`;
-  });
-  at(VERIFY_START, () => {
-    phase = 'verifying';
-    msg.innerHTML = `<em>verifier ·</em> checking ${boxes.length} blocks`;
+  // ---- 4. What's on screen now builds at once; the rest waits to scroll into view. ----
+  const queue = new Set<Unit>();
+  let flushTimer = 0;
+  const flush = () => {
+    flushTimer = 0;
+    const group = units.filter((u) => queue.has(u) && u.state === 'pending');
+    queue.clear();
+    if (group.length && !ended) runBatch(group, 0.75);
+  };
+  const byAnchor = new Map(units.map((u) => [u.anchor as Element, u]));
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const u = byAnchor.get(e.target);
+        if (!e.isIntersecting || u?.state !== 'pending') continue;
+        queue.add(u);
+        io.unobserve(e.target);
+      }
+      // Blocks that arrive together are built together.
+      if (queue.size && !flushTimer) flushTimer = window.setTimeout(flush, 90);
+    },
+    { rootMargin: '0px 0px -8% 0px' },
+  );
+  const onScreen = units.filter((u) => {
+    const r = u.anchor.getBoundingClientRect();
+    return r.top < innerHeight * 1.05 && r.bottom > 0;
   });
 
-  // ---- 8. Skipping and cleanup. ----
+  // ---- 5. Finishing, skipping and cleanup. ----
   let resolveDone!: () => void;
   const done = new Promise<void>((r) => (resolveDone = r));
-  const cleanup = () => {
+  const complete = () => {
     if (ended) return;
     ended = true;
-    for (const a of anims) a.cancel();
-    for (const el of typed) el.removeAttribute('data-b');
-    for (const el of quiet) el.removeAttribute('data-bq');
+    io.disconnect();
+    clearTimeout(flushTimer);
+    for (const el of typedAll) el.removeAttribute('data-b');
+    for (const el of quietAll) el.removeAttribute('data-bq');
     root.removeAttribute('data-building');
     layer.remove();
     ruler.remove();
     removeEventListener('keydown', onKey, true);
-    removeEventListener('wheel', skip, true);
-    removeEventListener('touchstart', skip, true);
-    removeEventListener('pointerdown', onPointer, true);
-    removeEventListener('resize', skip);
-    const secs = ((performance.now() - t0) / 1000).toFixed(1);
-    phase = 'merged';
+    removeEventListener('focusin', onFocus, true);
+    removeEventListener('scroll', onScroll);
+    removeEventListener('resize', onResize);
     bar.classList.add('is-done');
     fill.style.setProperty('--p', '1');
-    msg.innerHTML = `<em>PR #${spec.issue} merged ·</em> +${total} −0 · ${secs} s · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
+    msg.innerHTML = `<em>PR #${spec.issue} merged ·</em> +${total} −0 · ${commits} commit${commits === 1 ? '' : 's'} · <a href="${PULLWRIGHT}" target="_blank" rel="noopener">pullwright ↗</a>`;
     setTimeout(() => current === build && bar.classList.add('is-idle'), 2600);
     resolveDone();
   };
-  const skip = () => build.finish();
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Tab') return;
-    skip();
+  const finishAll = () => {
+    if (ended) return;
+    for (const skip of [...running]) skip();
+    complete();
   };
-  const onPointer = (e: PointerEvent) => {
-    if (!(e.target instanceof Node && bar.contains(e.target))) skip();
-  };
+  const onKey = (e: KeyboardEvent) => e.key === 'Escape' && finishAll();
+  // Tabbing into a block that isn't built yet reveals the page rather than focusing something invisible.
+  const onFocus = (e: FocusEvent) => (e.target as Element).closest?.('[data-b], [data-bq]') && finishAll();
+  // Phones resize as their address bar slides away; only a real width change moves the layout.
+  const w0 = innerWidth;
+  const onResize = () => Math.abs(innerWidth - w0) > 1 && finishAll();
   addEventListener('keydown', onKey, true);
-  addEventListener('wheel', skip, { capture: true, passive: true });
-  addEventListener('touchstart', skip, { capture: true, passive: true });
-  addEventListener('pointerdown', onPointer, true);
-  addEventListener('resize', skip);
+  addEventListener('focusin', onFocus, true);
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onResize);
 
-  const build: Build = {
-    finish() {
-      if (ended) return;
-      for (const a of anims) a.finish();
-      cleanup();
-    },
-    done,
-  };
-  at(END, () => cleanup());
+  const build: Build = { finish: finishAll, done };
   current = build;
+
+  bar.classList.remove('is-idle', 'is-done');
+  fill.style.setProperty('--p', '0');
+  msg.innerHTML = `<em>issue #${spec.issue} ·</em> ${spec.title}`;
+  for (const u of units) if (!onScreen.includes(u)) io.observe(u.anchor);
+  if (onScreen.length) runBatch(onScreen, 1);
+  else waiting();
   return build;
 }
 
-/** Keyboard: R rebuilds (outside text fields); Esc is handled by the skip listener. */
+/** Keyboard: R rebuilds (outside text fields); Esc (in buildPage) reveals the rest. */
 export function initBuildKeys(root: HTMLElement, spec: BuildSpec): void {
   addEventListener('keydown', (e) => {
     if (e.key !== 'r' && e.key !== 'R') return;
