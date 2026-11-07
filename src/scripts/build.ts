@@ -69,6 +69,16 @@ export const RESUME_BUILD: BuildSpec = {
   boxes: '.head, .glance, .role-item, .project, .side .card',
 };
 
+/** A case study (src/pages/work/[slug].astro). */
+export const WORK_BUILD = (seenKey: string, issue: number, title: string): BuildSpec => ({
+  seenKey,
+  issue,
+  title,
+  typed: ['h1', '.tagline', '.lede', '.stat-value', '.case h2', '.problem p', '.flow h3', '.decision h3', '.num-value'].join(','),
+  quiet: ['.crumbs', '.idx', '.stat-label', '.actions', '.flow p', '.step', '.prose', '.decision p', '.num-label', '.num-note', '.chips'].join(','),
+  boxes: '.hero, .shot, .flow li, .decision, .num',
+});
+
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const CURSOR_SVG =
   '<svg viewBox="0 0 16 20" aria-hidden="true"><path d="M1.5 1.2v15.2l4.1-3.9 2.7 6 2.6-1.1-2.6-5.9h5.6z"/></svg>';

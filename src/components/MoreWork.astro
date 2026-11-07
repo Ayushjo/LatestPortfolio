@@ -1,6 +1,9 @@
 ---
 import Tone from './Tone.astro';
 import { moreWork } from '../content/projects';
+import { caseStudies } from '../lib/work';
+
+const studies = await caseStudies();
 ---
 
 <section class="more experience-only" id="more-work" data-beat="stream" data-label="More work" data-group="Work" aria-labelledby="more-title">
@@ -26,6 +29,11 @@ import { moreWork } from '../content/projects';
                 {l.label} <span aria-hidden="true">↗</span>
               </a>
             ))}
+            {studies.has(p.slug) && (
+              <a class="link" href={`/work/${p.slug}/`}>
+                Case study <span aria-hidden="true">→</span>
+              </a>
+            )}
           </li>
         ))
       }

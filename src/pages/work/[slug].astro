@@ -1,0 +1,858 @@
+---
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import DemoPlayer from '../../components/DemoPlayer.astro';
+import { projects } from '../../content/projects';
+import { resume } from '../../content/resume';
+import { demoFor, thumbFor } from '../../lib/demos';
+import '../../styles/build.css';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('work');
+  const ordered = projects.filter((p) => entries.some((e) => e.id === p.slug));
+  return ordered.map((project, i) => ({
+    params: { slug: project.slug },
+    props: {
+      project,
+      entry: entries.find((e) => e.id === project.slug)!,
+      index: i,
+      total: ordered.length,
+      prev: ordered[i - 1] ?? null,
+      next: ordered[i + 1] ?? null,
+    },
+  }));
+}
+
+const { project: p, entry, index, total, prev, next } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+const demo = demoFor(p);
+const thumb = thumbFor(p);
+const pad = (n: number) => String(n).padStart(2, '0');
+const card = `/og-work-${p.slug}-v1.png`;
+const hasCard = existsSync(join(process.cwd(), 'public', card));
+const live = p.links.find((l) => !/github/i.test(l.label) && !/video/i.test(l.label));
+const code = p.links.find((l) => /github/i.test(l.label));
+const stack = [...new Set([...p.tags, ...d.stack])];
+/** Résumé is issue #1; each case study is the next issue in Pullwright's queue. */
+const issue = index + 2;
+---
+
+<Base
+  mode="recruiter"
+  title={`${p.name} — case study · ${resume.name}`}
+  description={`${p.tagline} ${d.lede}`.slice(0, 300)}
+  image={hasCard ? card : '/og-v3.png'}
+  imageAlt={`${p.name}: ${p.tagline}`}
+  buildKey={`work-built-${p.slug}-v1`}
+>
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="mark" href="/?view=immersive" aria-label={`${resume.name} — home`}>AS<span>/</span>26</a>
+      <a class="nav-link" href="/resume/#r-projects">Résumé</a>
+      <a class="nav-link" href="/writing/">Writing</a>
+    </nav>
+    <a class="nav-link back" href={`/?view=immersive#p-${p.slug}`}>See it in the stream →</a>
+  </header>
+
+  <main>
+    <article
+      class="case"
+      data-buildable
+      data-build-issue={issue}
+      data-build-title={`Write the ${p.name} case study`}
+      data-build-key={`work-built-${p.slug}-v1`}
+      aria-labelledby="case-title"
+    >
+      <p class="crumbs">
+        <a href="/resume/#r-projects">Work</a> <span aria-hidden="true">/</span> {p.name}
+      </p>
+
+      <header class="card hero">
+        <p class="idx">
+          <span>{pad(index + 1)}</span><span class="rule" aria-hidden="true"></span><span class="total">{pad(total)}</span>
+          {(d.role ?? p.role) && <span class="badge">{d.role ?? p.role}</span>}
+        </p>
+        <h1 id="case-title">{p.name}</h1>
+        <p class="tagline">{p.tagline}</p>
+        <p class="lede">{d.lede}</p>
+        <ul class="stats">
+          {
+            p.stats.map((s) => (
+              <li>
+                <span class="stat-value">{s.value}</span>
+                <span class="stat-label">{s.label}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="actions">
+          {
+            demo && (
+              <a
+                class="btn primary"
+                href={demo.src}
+                data-demo-open
+                data-title={p.name}
+                data-poster={demo.poster}
+                data-captions={demo.captions}
+              >
+                ▶ Watch the demo
+              </a>
+            )
+          }
+          {
+            live && (
+              <a class="btn" href={live.href} target="_blank" rel="noopener">
+                {live.label} ↗
+              </a>
+            )
+          }
+          {
+            code && (
+              <a class="btn" href={code.href} target="_blank" rel="noopener">
+                Code ↗
+              </a>
+            )
+          }
+        </p>
+      </header>
+
+      {
+        thumb && (
+          <a
+            class="shot"
+            href={demo?.src ?? thumb}
+            data-demo-open={demo ? '' : undefined}
+            data-title={p.name}
+            data-poster={demo?.poster}
+            data-captions={demo?.captions}
+            aria-label={demo ? `Play the ${p.name} demo` : `${p.name}, a still from its demo`}
+          >
+            <img src={thumb} alt={`${p.name}, from its demo`} width="800" height="500" decoding="async" />
+            {demo && (
+              <span class="play" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <path d="M5 3.2v9.6L12.6 8z" />
+                </svg>
+              </span>
+            )}
+          </a>
+        )
+      }
+
+      <section class="block problem" aria-labelledby="problem-h">
+        <h2 id="problem-h">The problem</h2>
+        <p>{d.problem}</p>
+      </section>
+
+      <section class="block" aria-labelledby="flow-h">
+        <h2 id="flow-h">How it works</h2>
+        <ol class="flow">
+          {
+            d.flow.map((f, i) => (
+              <li>
+                <span class="step" aria-hidden="true">
+                  {pad(i + 1)}
+                </span>
+                <h3>{f.name}</h3>
+                <p>{f.detail}</p>
+              </li>
+            ))
+          }
+        </ol>
+        <div class="prose">
+          <Content />
+        </div>
+      </section>
+
+      {
+        d.decisions.length > 0 && (
+          <section class="block" aria-labelledby="dec-h">
+            <h2 id="dec-h">Decisions, and why</h2>
+            <ol class="decisions">
+              {d.decisions.map((x) => (
+                <li class="decision">
+                  <h3>{x.title}</h3>
+                  <p>{x.why}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )
+      }
+
+      {
+        d.numbers.length > 0 && (
+          <section class="block" aria-labelledby="num-h">
+            <h2 id="num-h">By the numbers</h2>
+            <dl class="numbers">
+              {d.numbers.map((n) => (
+                <div class="num">
+                  <dt class="num-label">{n.label}</dt>
+                  <dd class="num-value">{n.value}</dd>
+                  {n.note && <dd class="num-note">{n.note}</dd>}
+                </div>
+              ))}
+            </dl>
+          </section>
+        )
+      }
+
+      <section class="block" aria-labelledby="stack-h">
+        <h2 id="stack-h">Built with</h2>
+        <ul class="chips">
+          {stack.map((t) => <li>{t}</li>)}
+        </ul>
+        {d.status && <p class="status">{d.status}</p>}
+      </section>
+
+      {
+        d.sources.length > 0 && (
+          <section class="block sources" aria-labelledby="src-h">
+            <h2 id="src-h">Sources</h2>
+            <ul>
+              {d.sources.map((s) => (
+                <li>
+                  <a href={s.href} target="_blank" rel="noopener">
+                    {s.label} ↗
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      <nav class="pager" aria-label="More case studies">
+        {
+          prev ? (
+            <a class="prev" href={`/work/${prev.slug}/`}>
+              <span class="dir">← Previous</span>
+              <span class="pname">{prev.name}</span>
+            </a>
+          ) : (
+            <span />
+          )
+        }
+        {
+          next ? (
+            <a class="next" href={`/work/${next.slug}/`}>
+              <span class="dir">Next →</span>
+              <span class="pname">{next.name}</span>
+            </a>
+          ) : (
+            <a class="next" href="/resume/">
+              <span class="dir">Back to →</span>
+              <span class="pname">the résumé</span>
+            </a>
+          )
+        }
+      </nav>
+
+      <footer class="close">
+        <p class="close-title">Want the rest of the story?</p>
+        <p class="close-cta">
+          <a class="btn primary" href={`mailto:${resume.contact.email}`}>{resume.contact.email}</a>
+          <a class="btn" href={resume.pdf} target="_blank" rel="noopener">Résumé PDF ↗</a>
+        </p>
+      </footer>
+
+      <DemoPlayer />
+    </article>
+  </main>
+</Base>
+
+<script>
+  import { initCopyButtons } from '../../scripts/ui';
+  import { initPlayer } from '../../scripts/player';
+  initCopyButtons();
+  initPlayer();
+  const root = document.querySelector<HTMLElement>('.case');
+  if (root) {
+    void import('../../scripts/build').then(({ startBuild, initBuildKeys, WORK_BUILD }) => {
+      const spec = WORK_BUILD(root.dataset.buildKey!, Number(root.dataset.buildIssue), root.dataset.buildTitle!);
+      initBuildKeys(root, spec);
+      void startBuild(root, spec);
+    });
+  }
+</script>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px var(--gutter);
+    /* The page scrolls under the bar, so it carries a frosted strip of the page colour. */
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .mark,
+  .nav-link {
+    font-family: var(--font-mono);
+    text-decoration: none;
+  }
+  .mark {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    color: var(--fg);
+  }
+  .mark span {
+    color: var(--fg-faint);
+    margin: 0 2px;
+  }
+  .nav-link {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--fg-dim);
+  }
+  .nav-link:hover {
+    color: var(--fg);
+  }
+
+  .case {
+    position: relative;
+    z-index: 1;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 96px var(--gutter) 96px;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+  .crumbs {
+    margin: 0 0 16px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-dim);
+  }
+  .crumbs a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .crumbs span {
+    margin: 0 6px;
+    color: var(--fg-faint);
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--bg-raised);
+  }
+  .hero {
+    padding: 36px 40px;
+  }
+  .idx {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 18px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+  }
+  .idx .rule {
+    flex: 0 0 56px;
+    height: 1px;
+    background: var(--line);
+  }
+  .idx .total {
+    color: var(--fg-faint);
+  }
+  .badge {
+    margin-left: auto;
+    padding: 3px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+    color: var(--fg-dim);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(3.2rem, 2rem + 5vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    margin: 14px 0 0;
+    font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .lede {
+    margin: 14px 0 0;
+    max-width: 64ch;
+    color: var(--fg-dim);
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    list-style: none;
+    margin: 28px 0 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .stats li {
+    display: grid;
+    gap: 4px;
+    padding: 16px 18px;
+  }
+  .stats li:first-child {
+    padding-left: 0;
+  }
+  .stats li + li {
+    border-left: 1px solid var(--line);
+  }
+  .stat-value {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.9rem, 1.4rem + 1.4vw, 2.6rem);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 24px 0 0;
+  }
+  .btn {
+    display: inline-block;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: var(--fg);
+    transition: border-color 0.25s var(--ease-out);
+  }
+  .btn:hover {
+    border-color: var(--fg);
+  }
+  .btn:focus-visible,
+  .shot:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 3px;
+  }
+  .btn.primary {
+    background: var(--fg);
+    border-color: var(--fg);
+    color: var(--bg);
+  }
+
+  .shot {
+    position: relative;
+    display: block;
+    margin: 18px 0 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #0b0b0d;
+    aspect-ratio: 16 / 10;
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.9s var(--ease-out);
+  }
+  .shot:hover img {
+    transform: scale(1.015);
+  }
+  .play {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(250, 250, 247, 0.94);
+    box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.55);
+    transition: transform 0.4s var(--ease-out);
+  }
+  .play svg {
+    width: 18px;
+    height: 18px;
+    margin-left: 3px;
+    fill: #111;
+  }
+  .shot:hover .play {
+    transform: scale(1.08);
+  }
+
+  .block {
+    margin-top: 64px;
+    scroll-margin-top: 90px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .problem p {
+    margin: 0;
+    max-width: 30ch;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+  }
+
+  /* The architecture as a chain of stages, each handing off to the next. */
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+  }
+  .flow li {
+    position: relative;
+    padding: 18px 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-raised);
+  }
+  .flow li:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    top: 50%;
+    right: -13px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--fg-dim);
+    transform: translateY(-50%);
+  }
+  .step {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    color: var(--fg-faint);
+  }
+  .flow h3 {
+    margin: 6px 0 6px;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.45rem;
+    line-height: 1.05;
+  }
+  .flow p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--fg-dim);
+  }
+  .prose {
+    max-width: 68ch;
+    margin-top: 28px;
+  }
+  .prose :global(p) {
+    margin: 0 0 1em;
+  }
+  .prose :global(strong) {
+    font-weight: 600;
+  }
+  .prose :global(code) {
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+  }
+  .prose :global(h3) {
+    margin: 1.6em 0 0.4em;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.5rem;
+  }
+  .prose :global(ul) {
+    padding-left: 1.2em;
+  }
+
+  .decisions {
+    display: grid;
+    gap: 12px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: dec;
+  }
+  .decision {
+    position: relative;
+    padding: 18px 22px 20px 64px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    counter-increment: dec;
+  }
+  .decision::before {
+    content: counter(dec, decimal-leading-zero);
+    position: absolute;
+    top: 20px;
+    left: 22px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+  .decision h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .decision p {
+    margin: 6px 0 0;
+    color: var(--fg-dim);
+  }
+
+  .numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+  .num {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    padding: 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-raised);
+  }
+  .num-label {
+    order: 2;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .num-value {
+    order: 1;
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 2.2rem;
+    line-height: 1.05;
+  }
+  .num-note {
+    order: 3;
+    margin: 4px 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: var(--fg-dim);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .chips li {
+    padding: 3px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--fg-dim);
+  }
+  .status {
+    margin: 18px 0 0;
+    color: var(--fg-dim);
+  }
+  .sources ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+  }
+  .sources a {
+    color: var(--fg-dim);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .sources a:hover {
+    color: var(--fg);
+  }
+
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 72px;
+  }
+  .pager a {
+    display: grid;
+    gap: 4px;
+    padding: 18px 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    text-decoration: none;
+    color: var(--fg);
+    transition: border-color 0.25s var(--ease-out);
+  }
+  .pager a:hover {
+    border-color: var(--fg);
+  }
+  .pager .next {
+    text-align: right;
+  }
+  .dir {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+  }
+  .pname {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.7rem;
+    line-height: 1.1;
+  }
+  .close {
+    margin-top: 72px;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .close-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+    line-height: 1;
+  }
+  .close-cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 22px 0 0;
+  }
+
+  @media (max-width: 860px) {
+    .flow {
+      grid-template-columns: 1fr;
+    }
+    .flow li:not(:last-child)::after {
+      content: '↓';
+      top: auto;
+      bottom: -14px;
+      right: 50%;
+      transform: translateX(50%);
+    }
+  }
+  @media (max-width: 640px) {
+    .hero {
+      padding: 24px;
+    }
+    .stats {
+      grid-template-columns: 1fr;
+    }
+    .stats li,
+    .stats li:first-child {
+      padding: 12px 0;
+    }
+    .stats li + li {
+      border-left: 0;
+      border-top: 1px solid var(--line);
+    }
+    .actions .btn {
+      flex: 1 1 auto;
+      text-align: center;
+    }
+    .decision {
+      padding: 16px 18px 18px 18px;
+    }
+    .decision::before {
+      position: static;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .pager {
+      grid-template-columns: 1fr;
+    }
+    .pager .next {
+      text-align: left;
+    }
+    .back {
+      display: none;
+    }
+  }
+  @media (max-width: 420px) {
+    .nav-link:not(.back) {
+      display: none;
+    }
+  }
+  @media print {
+    .site-header,
+    .shot,
+    .actions,
+    .pager,
+    .close {
+      display: none;
+    }
+    :global(html),
+    :global(body) {
+      background: #fff !important;
+    }
+    .case {
+      padding: 0;
+      font-size: 10pt;
+    }
+    .card,
+    .flow li,
+    .num,
+    .decision {
+      break-inside: avoid;
+    }
+  }
+</style>

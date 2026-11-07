@@ -1,4 +1,6 @@
-<!-- Numbers on the cards are ones that don't drift (no PR or contribution counts), so the
+<!-- Case studies: ?card=work&slug=<slug> → public/og-work-<slug>-v1.png (reads dist/work/cards.json,
+     so build first).
+     Numbers on the cards are ones that don't drift (no PR or contribution counts), so the
      images never go stale between renders.
      Share cards: ?card=home → public/og-v3.png, ?card=resume → public/og-resume-v2.png.
      Render both: sh scripts/og/render.sh -->
@@ -95,6 +97,50 @@ const variants={
       <div style="position:absolute;left:72px;width:560px;top:478px;height:1px;background:#d8d5cb"></div>
       <div class="t sans" style="left:72px;top:500px;font-size:19px;color:#3a3a3d"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#3f9a5a;margin-right:10px;vertical-align:1px"></span>Open to internships &amp; full-time · Remote · Available now</div>
       <div class="t mono" style="left:72px;top:546px;font-size:15px;color:#141416">iayush.com/resume</div>`);
+  },
+
+  // Case study: paper, the project's name and numbers, and its demo still mounted on the right.
+  async work(){
+    const slug=new URLSearchParams(location.search).get('slug');
+    const cards=await (await fetch('../../dist/work/cards.json')).json();
+    const c=cards.find(x=>x.slug===slug);
+    const PAPER='#f3f1ea';
+    card.style.background=PAPER; card.style.color='#141416';
+    g.fillStyle=PAPER; g.fillRect(0,0,W,H);
+    const P={x:648,y:150,w:500,h:312,r:18};
+    g.save(); g.shadowColor='rgba(20,18,12,0.3)'; g.shadowBlur=40; g.shadowOffsetY=18;
+    g.beginPath(); g.roundRect(P.x,P.y,P.w,P.h,P.r); g.fillStyle='#0a0a0c'; g.fill(); g.restore();
+    if (c.thumb) {
+      const i=await img('../../public'+c.thumb);
+      g.save(); g.beginPath(); g.roundRect(P.x,P.y,P.w,P.h,P.r); g.clip();
+      const s2=Math.max(P.w/i.width,P.h/i.height); const w2=i.width*s2, h2=i.height*s2;
+      g.drawImage(i,P.x+(P.w-w2)/2,P.y+(P.h-h2)/2,w2,h2); g.restore();
+    } else {
+      // No demo yet: the project's lead number in silver particles, as a print mounted on the page.
+      const big=c.stats[0].value, fs=big.length>4?132:168;
+      const m=await textMask(big,{font:`italic ${fs}px "Instrument Serif"`,x:P.x+P.w/2,y:P.y+P.h/2+fs*0.32});
+      dots(sample(m,26000,1),{r:[0.45,1.05]});
+      stream({y0:P.y+P.h*0.78,spread:70,n:1400,alpha:[0.04,0.18]});
+      g.save(); g.beginPath(); g.roundRect(P.x,P.y,P.w,P.h,P.r); g.clip();
+      g.filter='blur(6px)'; g.globalAlpha=0.85; g.drawImage(layer,0,0,W,H); g.filter='none'; g.globalAlpha=1;
+      g.globalCompositeOperation='screen'; g.drawImage(layer,0,0,W,H); g.globalCompositeOperation='source-over';
+      const vg=g.createRadialGradient(P.x+P.w/2,P.y+P.h/2,P.h*0.2,P.x+P.w/2,P.y+P.h/2,P.w*0.62);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.55)'); g.fillStyle=vg; g.fillRect(P.x,P.y,P.w,P.h);
+      g.restore();
+      html(`<div class="t mono" style="left:${P.x+22}px;top:${P.y+P.h-38}px;font-size:11px;color:#8b8e96">${c.stats[0].label}</div>`);
+    }
+    g.strokeStyle='rgba(0,0,0,0.12)'; g.lineWidth=1; g.beginPath(); g.roundRect(P.x+0.5,P.y+0.5,P.w-1,P.h-1,P.r); g.stroke();
+    const pad=(n)=>String(n).padStart(2,'0');
+    const size=c.name.length>11?84:c.name.length>8?96:110;
+    const stats=c.stats.map((s,k)=>`<div class="t serif" style="left:${72+k*178}px;top:394px;font-size:40px">${s.value}</div>
+      <div class="t mono" style="left:${74+k*178}px;top:444px;width:160px;white-space:normal;font-size:10.5px;color:#6b6a66;line-height:1.5">${s.label}</div>`).join('');
+    html(`<div class="t mono" style="left:72px;top:74px;font-size:14px;color:#6b6a66">Case study &nbsp;·&nbsp; ${pad(c.index)} / ${pad(c.total)}</div>
+      <div class="t serif" style="left:68px;top:104px;font-size:${size}px;line-height:1">${c.name}</div>
+      <div class="t sans" style="left:72px;top:${104+size+18}px;width:540px;white-space:normal;font-size:24px;font-weight:500;line-height:1.3">${c.tagline}</div>
+      <div style="position:absolute;left:72px;width:530px;top:376px;height:1px;background:#d8d5cb"></div>
+      ${stats}
+      <div class="t mono" style="left:72px;top:540px;font-size:15px;color:#141416">iayush.com/work/${c.slug}</div>
+      <div class="t mono" style="left:${P.x}px;top:${P.y+P.h+22}px;font-size:11px;color:#6b6a66">Ayush Singh${c.thumb?' · from the demo':' · in particles'}</div>`);
   },
 };
 (async()=>{

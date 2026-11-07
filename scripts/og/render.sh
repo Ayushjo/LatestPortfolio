@@ -2,6 +2,7 @@
 # Renders the share cards in scripts/og/card.html (1200×630) with headless Chrome:
 #   home   → public/og-v3.png          (every page)
 #   resume → public/og-resume-v2.png   (/resume)
+#   work   → public/og-work-<slug>-v1.png (/work/<slug>, after a build)
 # Bump the file name (and ogImage in src/layouts/Base.astro) when the card changes,
 # so X and LinkedIn fetch the new one instead of their cached copy.
 set -e
@@ -17,3 +18,9 @@ render() {
 }
 render home og-v3.png
 render resume og-resume-v2.png
+# One card per case study (needs a fresh build for dist/work/cards.json).
+if [ -f dist/work/cards.json ]; then
+  for slug in $(node -e 'for (const c of require("./dist/work/cards.json")) console.log(c.slug)'); do
+    render "work&slug=$slug" "og-work-$slug-v1.png"
+  done
+fi

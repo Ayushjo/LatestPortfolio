@@ -1,11 +1,13 @@
 import { resume } from '../content/resume';
+import { caseStudies } from '../lib/work';
 
 /**
  * /llms.txt (https://llmstxt.org): a plain-text brief for AI assistants and recruiting agents,
  * so a question like "who is Ayush Singh and is he a fit?" gets the real facts.
  */
-export function GET() {
+export async function GET() {
   const r = resume;
+  const studies = await caseStudies();
   const lines = [
     `# ${r.name}`,
     '',
@@ -38,7 +40,8 @@ export function GET() {
     '',
     ...r.projects.map(
       (p) =>
-        `- **${p.name}**: ${p.tagline} ${p.metrics.join('; ')}.${p.links[0] ? ` ${p.links[0].href}` : ''}`,
+        `- **${p.name}**: ${p.tagline} ${p.metrics.join('; ')}.${p.links[0] ? ` ${p.links[0].href}` : ''}` +
+        (studies.has(p.slug) ? ` Case study (architecture, decisions, numbers): ${r.contact.site}/work/${p.slug}/` : ''),
     ),
     '',
     '## Open source',

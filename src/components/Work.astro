@@ -2,9 +2,11 @@
 import Tone from './Tone.astro';
 import { featured } from '../content/projects';
 import { demoFor } from '../lib/demos';
+import { caseStudies } from '../lib/work';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const total = pad(featured.length);
+const studies = await caseStudies();
 ---
 
 <section class="work experience-only" id="work" aria-labelledby="work-title">
@@ -83,6 +85,11 @@ const total = pad(featured.length);
                     {l.label} <span aria-hidden="true">↗</span>
                   </a>
                 ))}
+                {studies.has(p.slug) && (
+                  <a class="pill story" href={`/work/${p.slug}/`}>
+                    Case study <span aria-hidden="true">→</span>
+                  </a>
+                )}
               </p>
             )}
             {demo && (
