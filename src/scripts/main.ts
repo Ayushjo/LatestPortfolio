@@ -7,6 +7,7 @@ import { initRail } from './rail';
 import { readBeats, scrollToTarget, storyTop, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
 import { initClocks, initCopyButtons } from './ui';
+import { initPlayer } from './player';
 
 const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
 const heroTitle = document.querySelector<HTMLElement>('[data-hero-title]');
@@ -21,6 +22,7 @@ initDemos(() => experience, beats);
 
 initCopyButtons();
 initClocks();
+initPlayer();
 for (const btn of document.querySelectorAll<HTMLElement>('[data-set-mode]')) {
   btn.addEventListener('click', () => setMode(btn.dataset.setMode as Mode));
 }

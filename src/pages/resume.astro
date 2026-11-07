@@ -28,8 +28,10 @@ import { profile } from '../content/profile';
   import { initSlider } from '../scripts/slider';
   import { onModeChange } from '../scripts/mode';
   import { initClocks, initCopyButtons } from '../scripts/ui';
+  import { initPlayer } from '../scripts/player';
   initCopyButtons();
   initClocks();
+  initPlayer();
   const root = document.querySelector<HTMLElement>('.resume');
   if (root) {
     void import('../scripts/build').then(({ startBuild, initBuildKeys }) => {
