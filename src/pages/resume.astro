@@ -27,6 +27,9 @@ import { profile } from '../content/profile';
 <script>
   import { initSlider } from '../scripts/slider';
   import { onModeChange } from '../scripts/mode';
+  import { initClocks, initCopyButtons } from '../scripts/ui';
+  initCopyButtons();
+  initClocks();
   const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
   if (slider) initSlider(slider);
   // This page is the résumé; picking another mode goes to the home page in that mode.

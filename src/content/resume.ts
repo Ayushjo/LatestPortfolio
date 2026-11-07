@@ -23,7 +23,8 @@ export const resume = {
   name: profile.name,
   headline: 'Backend & systems engineer',
   stack: ['TypeScript', 'Node.js', 'Rust', 'Python'],
-  summary: profile.bio.recruiter,
+  // The status line already says I'm open to work, so the summary doesn't repeat it.
+  summary: profile.bio.recruiter.replace(/\s*Open to opportunities\.?$/, ''),
   location: profile.location,
   timezone: { id: profile.timezone, label: 'IST', offset: 'UTC+5:30' },
   graduating: 'May 2028',
