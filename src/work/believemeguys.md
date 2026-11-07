@@ -2,66 +2,106 @@
 lede: >-
   BelieveMeGuys is a crypto copy-trading platform. You connect your own exchange account with a
   trade-only API key, choose a verified leader from a leaderboard ranked by real fills, and every
-  fill the leader makes is mirrored into your account in under a second, sized to your settings
-  and stopped by a daily loss cap you set. Your money never leaves your exchange account.
+  fill the leader makes is copied into your account, sized to your settings and stopped by a daily
+  loss cap you set. Your money never leaves your exchange account. It's a TypeScript monorepo: a
+  Next.js web app and a separate copy engine that does nothing but trade.
 problem: >-
-  Following a trader you trust usually means either watching them and copying by hand, always
-  late, or handing your money to someone else. BelieveMeGuys copies their trades as they happen
-  while you keep custody: the platform can place trades on your account but can never withdraw.
+  Following a trader you trust usually means watching them and copying by hand, always late, or
+  handing your money to someone else. BelieveMeGuys copies their trades as they happen while you
+  keep custody: it can place trades on your account but can never withdraw. And because it moves
+  real money, a copy must never be placed twice and must never be silently missed.
 role: Solo
 flow:
-  - name: Connect
+  - name: Watch the leaders
     detail: >-
-      Link an exchange account with a trade-only API key that has withdrawals disabled. It takes
-      about two minutes. Keys are encrypted at rest with AES-256-GCM and never shown again.
-  - name: Choose a leader
-    detail: Pick from a leaderboard of verified leaders, ranked by real fills.
-  - name: Set size and risk
+      Every 5 s the engine syncs which leaders are verified and have at least one active follower.
+      For each, it holds an authenticated WebSocket to Delta Exchange on that account's private
+      trades channel, with heartbeats, an idle watchdog and reconnects in about 1.5 s.
+  - name: Ingest the fill, once
     detail: >-
-      Fixed, proportional or multiplied sizing (a leader trading 1.0 can become 0.25 for you), and
-      a daily loss cap that the engine enforces.
-  - name: Mirror in real time
+      Each leader fill is written to Postgres. A unique constraint on the leader plus the exchange's
+      fill ID makes ingestion idempotent, so a replayed or duplicated message changes nothing.
+  - name: Size it for every follower
     detail: >-
-      When the leader's order fills, the engine sizes it for each follower, checks their risk
-      limits, and places it on their exchange with their own trade-only key.
-  - name: Watch, pause, stop
+      For each active follow, the copy is sized by the follower's mode (proportional to equity,
+      fixed margin, or a multiplier), then checked against their max position and daily loss cap.
+  - name: Place it, exactly once
     detail: >-
-      A live dashboard shows every copy. Pause keeps your settings and skips new fills; Stop ends
-      the copy and never closes open positions on its own. An admin kill switch can halt copying
-      everywhere.
+      Every copy gets a deterministic client order ID that is unique in the database, so a retry or
+      a second engine can never place it twice. The market order goes to the follower's own
+      account, signed with their trade-only key.
+  - name: Recover what was missed
+    detail: >-
+      After any reconnect the engine replays recent fills, and a reconcile loop runs every 30 s, so a
+      dropped connection never means a dropped copy.
+  - name: Show it live
+    detail: >-
+      The dashboard updates over Server-Sent Events. Followers can pause (keep settings, skip new
+      fills) or stop (end the copy without closing open positions).
 decisions:
+  - title: The engine is its own service
+    why: >-
+      Trade execution never shares a process with web traffic. The Next.js app serves the site and
+      the API; a long-running Node process does nothing but watch fills and place orders.
+  - title: No message queue, on purpose
+    why: >-
+      The engine fans out in-process, and Postgres does the coordination. Unique constraints on fill
+      IDs and client order IDs make every step safe to retry, which is the guarantee a queue would
+      have been there to provide, with one less system to run.
   - title: Never hold the money
     why: >-
-      Followers keep their funds on their own exchange account and connect with a key that can trade
-      but not withdraw. The platform never has custody, so there's nothing to withdraw even if it
-      were compromised.
-  - title: Encrypt keys at rest, show them once
+      Followers connect keys that can trade but not withdraw, and orders go into their own account.
+      The platform never has custody, so there's nothing to take even if it were compromised.
+  - title: Keys encrypted, and connected only once
     why: >-
-      API secrets are encrypted with AES-256-GCM and never displayed again after you enter them.
-  - title: Risk is enforced by the engine, not the follower's attention
+      API secrets are encrypted at rest with AES-256-GCM and a random IV per key. An HMAC fingerprint
+      blocks connecting the same key twice, and the exchange account's ID blocks connecting the same
+      account through a second key.
+  - title: Exchange-agnostic from day one
     why: >-
-      The daily loss cap is checked by the engine before each mirrored order, so it holds even when
-      the follower isn't watching.
-  - title: Stopping never closes positions
+      A shared package defines one Exchange interface (verify, account, positions, fills, place
+      order, mark price, fill stream) and resolves instruments to a canonical form. Delta Exchange
+      India is the live implementation; the next venue is one more adapter.
+  - title: Fail closed
     why: >-
-      Ending a copy only stops new trades. Closing an open position is a decision with a price, so
-      it's left to the follower.
+      A global kill switch and a maintenance mode can stop copying everywhere. If a leader's key is
+      rejected, their follows pause automatically and followers are notified. Stopping a copy never
+      closes a position on its own.
 numbers:
-  - value: <1 s
-    label: To mirror a leader's fill
-  - value: $10
-    label: Minimum per copy
+  - value: ~1.5 s
+    label: From the leader's fill to the copy filling
+    note: >-
+      Measured in production on a real ETH copy, from database timestamps: the engine seeing the
+      leader's fill through to the follower's order filling (1.47 s).
+  - value: 0.43 s
+    label: Copy order sent to filled
+    note: Same trade.
+  - value: 30 s
+    label: Reconcile loop
+    note: Plus a replay of recent fills on every reconnect.
   - value: '0'
     label: Withdrawal permissions held
-  - value: '2025'
-    label: Engine live on Delta Exchange India
-    note: The verified leaderboard launched in 2026.
+  - value: '18'
+    label: Tables in the shared Prisma schema
+  - value: $10
+    label: Minimum per copy
 stack:
+  - React 19
+  - Tailwind CSS v4
+  - Neon
+  - Prisma
+  - better-auth
+  - Server-Sent Events
   - AES-256-GCM
+  - Railway
+  - Cloudflare R2
   - Resend
+  - Redis (optional cache)
+  - pnpm monorepo
+  - Vitest
 status: >-
-  Live on Delta Exchange India, in USDT and INR. Binance, Bybit and CoinSwitch are next.
-  Copy-trading is high risk and nothing here is investment advice.
+  Live on Delta Exchange India, in USDT and INR. Copy-trading is high risk and nothing here is
+  investment advice.
 sources:
   - label: believemeguys.com
     href: https://www.believemeguys.com
@@ -72,15 +112,22 @@ sources:
 ---
 
 Copy trading is a timing problem with money attached. A leader's fill is only useful to a follower
-if it arrives while the price is still close, so the engine's job is to see the fill, size it for
-every follower, check each follower's limits, and place each order on that follower's exchange,
-all within a second.
+if the copy arrives while the price is still close. In production, a real copy filled about 1.5
+seconds after the leader's: the engine saw the fill, sized it, checked the follower's limits and
+placed the order, and the exchange filled it 0.43 s after it was sent.
 
-The harder design work is about what the platform is not allowed to do. It never holds anyone's
-funds: followers connect with keys that can trade but not withdraw, and the keys are encrypted at
-rest. A follower's daily loss cap is enforced by the engine itself, not left to an alert they
-might miss. Stopping a copy never closes a position on its own, because that's a decision with a
-price.
+The harder problem is correctness, because the failure modes cost real money. A WebSocket that
+drops can miss a fill. A retry can place an order twice. The usual fix is a message queue; here
+the guarantee comes from the database instead. A fill can only be recorded once, because its
+exchange ID is unique. A copy can only be placed once, because its client order ID is derived from
+the fill and the follower, and is unique too. With both of those in place, the engine can replay
+and reconcile as often as it likes, and that's exactly what it does: after every reconnect, and
+every 30 seconds.
 
-I built the platform solo: the mirroring engine, the leaderboard, the follower dashboard and the
-admin controls. It's been live on Delta Exchange India since 2025.
+Early on, the fill socket dropped every ten minutes. It now runs on heartbeats and an idle
+watchdog, reconnects in about a second and a half, and replays what it missed.
+
+Everything else follows from the platform not being trusted with more than it needs: keys that
+can't withdraw, secrets encrypted at rest, a key or exchange account that can only be connected
+once, and a kill switch that stops everything. I built it solo, from the exchange adapter to the
+dashboard.

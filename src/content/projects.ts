@@ -150,16 +150,17 @@ export const projects: Project[] = [
     summary:
       'A crypto copy-trading platform: link your exchange with trade-only keys, follow a verified leader, and every fill is mirrored into your account — sized to your settings and fenced by a daily loss cap the engine enforces.',
     stats: [
-      { value: '<1 s', label: 'to mirror a leader’s fill' },
+      { value: '~1.5 s', label: 'leader’s fill to your fill' },
+      { value: '0.43 s', label: 'from order sent to filled' },
       { value: '0', label: 'withdrawal permissions held' },
-      { value: '$10', label: 'minimum per copy' },
     ],
     metrics: [
-      'Real-time engine mirrors leader fills into follower accounts in under a second',
+      'Standalone Node engine streams leader fills over WebSockets; a copy fills ~1.5 s after the leader’s (0.43 s order-to-fill, measured in production)',
       'Fixed, proportional or multiplied sizing with an engine-enforced daily loss cap',
+      'Postgres-enforced idempotency (unique fill IDs + deterministic client order IDs), no message queue',
       'AES-256-GCM at rest, trade-only API keys, admin kill-switch',
     ],
-    tags: ['Copy trading', 'Real-time', 'Delta Exchange'],
+    tags: ['TypeScript', 'Next.js', 'Node.js', 'PostgreSQL', 'WebSockets', 'Delta Exchange'],
     links: [{ label: 'Live', href: 'https://www.believemeguys.com' }],
   },
   {
