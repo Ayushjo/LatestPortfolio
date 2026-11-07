@@ -1,5 +1,6 @@
 ---
 import { resume } from '../content/resume';
+import '../styles/build.css';
 import { formatDate, getPosts } from '../lib/writing';
 import { demoFor } from '../lib/demos';
 
@@ -269,6 +270,11 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     <p class="colophon">
       <span>Also as <a href="/resume.json">resume.json</a> · <a href="/llms.txt">llms.txt</a></span>
       <span>Numbers as of {snapshot}</span>
+      <span>
+        Built live by <a href="https://github.com/Ayushjo/MyOwnDevin" target="_blank" rel="noopener">Pullwright</a>'s agents ·
+        press R · after Joel Califa's Swarm, as seen on
+        <a href="https://www.beebombshell.com/resume" target="_blank" rel="noopener">Bhavya Verma's résumé</a>
+      </span>
     </p>
   </footer>
 </article>

@@ -130,6 +130,7 @@ async function apply(mode: Mode) {
             /* fine */
           }
           void apply(getMode());
+wireBuild();
         },
       },
     });
@@ -146,8 +147,33 @@ async function apply(mode: Mode) {
   }
 }
 
+// Recruiter mode: Pullwright's agents build the résumé (first visit), loaded only when needed.
+let buildWired = false;
+function wireBuild() {
+  const root = document.querySelector<HTMLElement>('.resume');
+  if (!root || getMode() !== 'recruiter') return;
+  void import('./build').then(({ startBuild, initBuildKeys }) => {
+    if (!buildWired) initBuildKeys(root);
+    buildWired = true;
+    void startBuild(root);
+  });
+}
+
 onModeChange((mode, prev) => {
   if (mode === 'recruiter' || prev === 'recruiter') window.scrollTo({ top: 0 });
+  if (mode === 'recruiter') {
+    // Hold the résumé back synchronously (before it paints) if Pullwright is about to build it.
+    try {
+      if (!localStorage.getItem('resume-built-v1') && !prefersReducedMotion()) {
+        document.documentElement.dataset.prebuild = '';
+        setTimeout(() => delete document.documentElement.dataset.prebuild, 2000);
+      }
+    } catch {
+      /* storage blocked: no build, nothing to hold */
+    }
+    wireBuild();
+  }
+  else if (prev === 'recruiter') void import('./build').then(({ stopBuild }) => stopBuild());
   void apply(mode);
 });
 void apply(getMode());

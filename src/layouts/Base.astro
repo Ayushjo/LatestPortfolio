@@ -97,6 +97,25 @@ const jsonLd = {
           m = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'recruiter' : 'immersive';
         }
         document.documentElement.dataset.mode = m;
+        // A first visit to the résumé gets built by Pullwright's agents: keep it from flashing
+        // fully formed for a frame first. Never longer than 2 s, even if the build never starts.
+        try {
+          var nav = navigator;
+          if (
+            m === 'recruiter' &&
+            !localStorage.getItem('resume-built-v1') &&
+            !matchMedia('(prefers-reduced-motion: reduce)').matches &&
+            !nav.webdriver &&
+            !/HeadlessChrome|Lighthouse|bot|crawl|spider/i.test(nav.userAgent) &&
+            !(nav.connection && nav.connection.saveData)
+          ) {
+            var root = document.documentElement;
+            root.dataset.prebuild = '';
+            setTimeout(function () {
+              delete root.dataset.prebuild;
+            }, 2000);
+          }
+        } catch (e) {}
       })();
     </script>
 

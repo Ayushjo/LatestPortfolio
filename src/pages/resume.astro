@@ -30,6 +30,13 @@ import { profile } from '../content/profile';
   import { initClocks, initCopyButtons } from '../scripts/ui';
   initCopyButtons();
   initClocks();
+  const root = document.querySelector<HTMLElement>('.resume');
+  if (root) {
+    void import('../scripts/build').then(({ startBuild, initBuildKeys }) => {
+      initBuildKeys(root);
+      void startBuild(root);
+    });
+  }
   const slider = document.querySelector<HTMLElement>('[data-mode-slider]');
   if (slider) initSlider(slider);
   // This page is the résumé; picking another mode goes to the home page in that mode.
