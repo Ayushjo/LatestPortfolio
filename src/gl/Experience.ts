@@ -106,6 +106,20 @@ export class Experience {
     return new DOMRect(toX(r.cx - r.w / 2), toY(r.cy + r.h / 2), (r.w / (2 * view.halfW)) * innerWidth, (r.h / (2 * view.halfH)) * innerHeight);
   }
 
+  /** Where the held shape is on screen (CSS px) and which beat it is, for click-to-play. */
+  heldShapeRect(): { key: string; rect: DOMRect } | null {
+    const h = this.stream.heldShape();
+    if (!h) return null;
+    const view = currentView();
+    const toX = (x: number) => (x / view.halfW + 1) * 0.5 * innerWidth;
+    const toY = (y: number) => (1 - (y / view.halfH + 1) * 0.5) * innerHeight;
+    return { key: h.key, rect: new DOMRect(toX(h.x0), toY(h.y1), toX(h.x1) - toX(h.x0), toY(h.y0) - toY(h.y1)) };
+  }
+
+  setShapeGlow(on: boolean): void {
+    this.stream.setGlow(on);
+  }
+
   /**
    * Dev only: fast-forward the timelines and simulation at a fixed step, then draw once.
    * Lets headless/hidden previews (where requestAnimationFrame is paused) be inspected.

@@ -2,9 +2,6 @@ import { gsap } from 'gsap';
 import type { Experience } from '../gl/Experience';
 import { progress, type Beat, type ShapeSide } from './scroll';
 
-/** How long a chapter must be held before its demo starts on its own. */
-const AUTO_AFTER = 1.5;
-
 interface Caption {
   from: number;
   to: number;
@@ -30,7 +27,8 @@ const captionAt = (list: Caption[], t: number) => list.find((c) => t >= c.from &
  * Demo videos. Wide screens: a held chapter's particles fly into a big 16:10 screen and play
  * the clip as moving dots, the crisp clip fades in over them, and the story panel compacts;
  * a progress line and synced captions sit under the clip. Tall screens: the clip plays
- * inline in the panel, with the same captions. ▶ / ◼ toggles either by hand.
+ * inline in the panel, with the same captions. Nothing plays by itself: ▶ Demo, or a click on
+ * the chapter's particle shape (which glows and shows "▶ Watch" under the pointer), starts it.
  */
 export function initDemos(getExp: () => Experience | null, beats: Beat[]): () => void {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-demo]')];
@@ -38,7 +36,6 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
   if (!buttons.length) return () => {};
 
   const tall = () => innerWidth / innerHeight <= 1.15;
-  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const beatOf = (btn: HTMLButtonElement) => beats.findIndex((b) => b.key === btn.dataset.demo);
   const chapterOf = (btn: HTMLButtonElement) => btn.closest<HTMLElement>('[data-beat]');
   const inlineOf = (btn: HTMLButtonElement) =>
@@ -49,8 +46,6 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
   let playing: HTMLButtonElement | null = null;
   let mode: 'stage' | 'inline' | null = null;
   let captions: Caption[] = [];
-  let dismissed: HTMLButtonElement | null = null;
-  let held = 0;
 
   const start = (btn: HTMLButtonElement) => {
     if (playing && playing !== btn) stop(playing);
@@ -100,27 +95,63 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
 
   for (const btn of buttons) {
     btn.addEventListener('click', () => {
-      if (playing === btn) {
-        stop(btn);
-        dismissed = btn;
-      } else start(btn);
+      if (playing === btn) stop(btn);
+      else start(btn);
     });
   }
 
   const hudFill = hud?.querySelector<HTMLElement>('.fill');
   const hudCaption = hud?.querySelector<HTMLElement>('.caption');
 
-  const tick = (_t: number, deltaMs: number) => {
+  // ---- Click the shape to play. ----
+  const label = document.createElement('div');
+  label.className = 'watch-cursor';
+  label.setAttribute('aria-hidden', 'true');
+  label.innerHTML = '<span>▶</span> Watch';
+  document.body.append(label);
+  const PAD = 18;
+  /** The demo button whose chapter shape is under (x, y), if any. */
+  const demoAt = (x: number, y: number, target: EventTarget | null): HTMLButtonElement | null => {
+    if (playing || tall()) return null;
+    if (target instanceof Element && target.closest('a, button, input, textarea, select, .panel, .site-header, .rail')) return null;
+    const hit = getExp()?.heldShapeRect();
+    if (!hit) return null;
+    const { rect: r, key } = hit;
+    if (x < r.left - PAD || x > r.right + PAD || y < r.top - PAD || y > r.bottom + PAD) return null;
+    return buttons.find((b) => b.dataset.demo === key) ?? null;
+  };
+  let hovering: HTMLButtonElement | null = null;
+  const setHover = (btn: HTMLButtonElement | null) => {
+    if (btn === hovering) return;
+    hovering = btn;
+    document.documentElement.classList.toggle('is-over-demo', !!btn);
+    getExp()?.setShapeGlow(!!btn);
+  };
+  const onMove = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    setHover(demoAt(e.clientX, e.clientY, e.target));
+    if (hovering) label.style.transform = `translate(${e.clientX + 16}px, ${e.clientY + 18}px)`;
+  };
+  const onClick = (e: MouseEvent) => {
+    const btn = demoAt(e.clientX, e.clientY, e.target);
+    if (!btn) return;
+    setHover(null);
+    start(btn);
+  };
+  // Leaving the window straight from the shape sends no further moves.
+  const onOut = (e: PointerEvent) => !e.relatedTarget && setHover(null);
+  addEventListener('pointermove', onMove, { passive: true });
+  addEventListener('pointerout', onOut);
+  addEventListener('click', onClick);
+  addEventListener('scroll', () => hovering && setHover(null), { passive: true });
+
+  const tick = () => {
     const k = Math.floor(progress.beat);
     const local = progress.beat - k;
     const holding = progress.beatIn > 0.99 && local > 0.02 && local < 0.42;
     const here = holding ? (buttons.find((b) => beatOf(b) === k) ?? null) : null;
 
     if (playing && playing !== here) stop(playing);
-    if (dismissed && dismissed !== here) dismissed = null;
-
-    held = here && !playing ? held + deltaMs / 1000 : 0;
-    if (here && !playing && here !== dismissed && held > AUTO_AFTER && !calm) start(here);
 
     if (!playing) return;
     if (mode === 'stage' && hud) {
@@ -149,6 +180,11 @@ export function initDemos(getExp: () => Experience | null, beats: Beat[]): () =>
   gsap.ticker.add(tick);
 
   return () => {
+    removeEventListener('pointermove', onMove);
+    removeEventListener('pointerout', onOut);
+    removeEventListener('click', onClick);
+    setHover(null);
+    label.remove();
     gsap.ticker.remove(tick);
     if (playing) stop(playing);
   };

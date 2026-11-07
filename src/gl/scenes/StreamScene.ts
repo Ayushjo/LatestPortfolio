@@ -64,6 +64,11 @@ export class StreamScene implements Scene {
   private pairBrightness: [number, number] = [0.2, 0.2];
   /** 0..1 while a tall screen is between two stories (see showBeat). */
   private gap = 0;
+  /** The fully formed shape on screen right now (no morph, override or gap), for hit-testing. */
+  private held: { cloud: PointCloud; key: string } | null = null;
+  private bounds = new WeakMap<PointCloud, { x0: number; x1: number; y0: number; y1: number }>();
+  /** Hover glow on the held shape, eased toward its target. */
+  private glow = { value: 0, target: 0 };
   private override: BeatSpec | null = null;
   private overrideMix = { value: 0, target: 0 };
   private idleHandle = 0;
@@ -111,7 +116,9 @@ export class StreamScene implements Scene {
     else this.showWords();
 
     const [ba, bb] = this.pairBrightness;
-    u.brightness.value = (ba + (bb - ba) * u.morph.value) * (1 - 0.6 * this.gap);
+    const g = this.glow;
+    g.value += ((this.held ? g.target : 0) - g.value) * (1 - Math.exp(-u.dt.value * 8));
+    u.brightness.value = (ba + (bb - ba) * u.morph.value) * (1 - 0.6 * this.gap) * (1 + 0.32 * g.value);
     this.particles.step(this.renderer);
   }
 
@@ -132,6 +139,32 @@ export class StreamScene implements Scene {
       o.value = 0;
       this.override = null;
     }
+  }
+
+  /** Brighten the held shape a little (hovering it promises something will happen). */
+  setGlow(on: boolean): void {
+    this.glow.target = on ? 1 : 0;
+  }
+
+  /** The held shape's key and world-space bounds, or null while morphing or between stories. */
+  heldShape(): { key: string; x0: number; x1: number; y0: number; y1: number } | null {
+    if (!this.held) return null;
+    const { cloud, key } = this.held;
+    let b = this.bounds.get(cloud);
+    if (!b) {
+      b = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+      const d = cloud.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const x = d[i]!;
+        const y = d[i + 1]!;
+        if (x < b.x0) b.x0 = x;
+        if (x > b.x1) b.x1 = x;
+        if (y < b.y0) b.y0 = y;
+        if (y > b.y1) b.y1 = y;
+      }
+      this.bounds.set(cloud, b);
+    }
+    return { key, ...b };
   }
 
   resize(view: View): void {
@@ -195,6 +228,7 @@ export class StreamScene implements Scene {
     const ca = this.cloud(a);
     const cb = this.cloud(b);
     this.prefetch([k - 1, k, k + 1, k + 2]);
+    this.held = ca && m < 0.02 && this.gap < 0.02 && progress.beatIn > 0.99 ? { cloud: ca, key: a.key } : null;
     if (ca === undefined || cb === undefined) return; // still building: keep the current targets
 
     const formA = isStream(a.key) ? 0 : 1;

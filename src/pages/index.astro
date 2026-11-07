@@ -86,6 +86,44 @@ import { profile } from '../content/profile';
     color: var(--fg-faint);
     margin: 0 2px;
   }
+  /* Click-to-play: over a chapter shape that has a demo, the pointer carries a small label. */
+  :global(html.is-over-demo),
+  :global(html.is-over-demo body) {
+    cursor: pointer;
+  }
+  :global(.watch-cursor) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px 5px 9px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(10, 10, 12, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.85;
+    transition:
+      opacity 0.2s var(--ease-out),
+      scale 0.3s var(--ease-out);
+  }
+  :global(.watch-cursor span) {
+    font-size: 0.6rem;
+  }
+  :global(html.is-over-demo .watch-cursor) {
+    opacity: 1;
+    scale: 1;
+  }
   .demo-hud {
     position: fixed;
     z-index: 5;
