@@ -6,7 +6,7 @@ import { initDemos } from './demo';
 import { initRail } from './rail';
 import { readBeats, scrollToTarget, storyTop, startSmoothScroll, stopSmoothScroll, trackScroll, untrackScroll, type ShapeSide } from './scroll';
 import { initSlider } from './slider';
-import { initClocks, initCopyButtons, initMoreButtons, initToc } from './ui';
+import { initClocks, initCopyButtons, initMoreButtons, initToc, initDock } from './ui';
 import { initPlayer } from './player';
 import { initSkillTrace } from './skills';
 
@@ -29,6 +29,7 @@ const resumeEl = document.querySelector<HTMLElement>('.resume');
 if (resumeEl) {
   initSkillTrace(resumeEl);
   initToc(resumeEl);
+  initDock(resumeEl);
 }
 for (const btn of document.querySelectorAll<HTMLElement>('[data-set-mode]')) {
   btn.addEventListener('click', () => setMode(btn.dataset.setMode as Mode));

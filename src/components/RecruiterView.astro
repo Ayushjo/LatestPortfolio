@@ -359,6 +359,15 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     </p>
   </footer>
 
+  <div class="dock" data-dock aria-label="Contact">
+    <a class="btn primary" href={`mailto:${resume.contact.email}`}>Email me</a>
+    <button class="btn copy" type="button" data-copy={resume.contact.email} aria-label="Copy email address">
+      <svg class="idle" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6"></rect><path d="M10.5 5V3.6c0-.9-.7-1.6-1.6-1.6H3.6C2.7 2 2 2.7 2 3.6v5.3c0 .9.7 1.6 1.6 1.6H5"></path></svg>
+      <svg class="done" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 8.6l3 3 6.6-7"></path></svg>
+    </button>
+    <a class="btn" href={resume.pdf} target="_blank" rel="noopener">PDF ↗</a>
+  </div>
+
   <noscript><style>.prs li { display: block !important; } .more-prs { display: none; }</style></noscript>
 
   <dialog class="player" data-player aria-label="Project demo">
@@ -1423,6 +1432,51 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     }
   }
 
+  /* Phones: once the top buttons scroll away, email and the PDF dock at the bottom. */
+  .dock {
+    display: none;
+  }
+  @media (max-width: 640px) {
+    .dock {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 25;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--bg-raised) 92%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(calc(100% + 16px));
+      transition:
+        opacity 0.3s var(--ease-out),
+        transform 0.45s var(--ease-out);
+    }
+    .dock:global(.is-shown) {
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+    }
+    .dock .btn {
+      padding: 10px 14px;
+    }
+    .dock .copy {
+      width: 42px;
+    }
+    /* Leave room so the dock never covers the last lines. */
+    .resume {
+      padding-bottom: 120px;
+    }
+  }
+
   .print-contact {
     display: none;
   }
@@ -1460,6 +1514,7 @@ const snapshot = new Date(resume.openSource.snapshotAt).toLocaleDateString('en-G
     .switch,
     .cta,
     .toc,
+    .dock,
     .close,
     .avatar,
     .status,

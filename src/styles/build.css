@@ -269,6 +269,12 @@
   background: none;
 }
 
+@media (max-width: 640px) {
+  /* Sit above the phone contact dock when it's showing. */
+  :root.has-dock .build-hud {
+    bottom: 80px;
+  }
+}
 @media (max-width: 560px) {
   .build-hud {
     bottom: 12px;

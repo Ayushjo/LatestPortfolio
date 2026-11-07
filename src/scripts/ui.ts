@@ -122,3 +122,27 @@ export function initToc(root: HTMLElement): void {
   );
   mark();
 }
+
+/** The phone contact dock: shown while neither the top buttons nor the close are on screen. */
+export function initDock(root: HTMLElement): void {
+  const dock = root.querySelector<HTMLElement>('[data-dock]');
+  const top = root.querySelector<HTMLElement>('.cta');
+  const close = root.querySelector<HTMLElement>('.close');
+  if (!dock || !top || !close || dock.dataset.ready) return;
+  dock.dataset.ready = '1';
+  const seen = new Map<Element, boolean>([
+    [top, true],
+    [close, false],
+  ]);
+  const update = () => {
+    const show = !seen.get(top) && !seen.get(close) && scrollY > 0;
+    dock.classList.toggle('is-shown', show);
+    document.documentElement.classList.toggle('has-dock', show);
+  };
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) seen.set(e.target, e.isIntersecting);
+    update();
+  });
+  io.observe(top);
+  io.observe(close);
+}
